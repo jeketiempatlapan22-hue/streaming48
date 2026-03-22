@@ -3,10 +3,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Shield } from "lucide-react";
+import ConnectionStatus from "@/components/viewer/ConnectionStatus";
+import PipButton from "@/components/viewer/PipButton";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
 const Watermark = lazy(() => import("@/components/viewer/Watermark"));
+const LivePoll = lazy(() => import("@/components/viewer/LivePoll"));
 
 type StreamType = "m3u8" | "cloudflare" | "youtube";
 
@@ -126,11 +129,13 @@ const LivePage = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
+      <ConnectionStatus />
       {showUsernameModal && <Suspense fallback={null}><UsernameModal onSubmit={handleUsernameSet} /></Suspense>}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-border px-4 py-3">
           <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
           <div className="flex-1 min-w-0"><h1 className="text-sm font-bold text-foreground lg:text-base truncate">{stream?.title || "RealTime48"}</h1></div>
+          <PipButton />
           {isLive ? <span className="flex items-center gap-1.5 rounded-full bg-destructive/20 px-3 py-1 text-xs font-semibold text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />LIVE</span> : <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">OFFLINE</span>}
         </header>
         <div className="player-area relative">
@@ -153,10 +158,15 @@ const LivePage = () => {
         )}
         <div className="border-t border-border px-4 py-3"><h2 className="text-sm font-bold text-foreground">{stream?.title || "RealTime48"}</h2></div>
       </div>
-      <div className="h-[50vh] border-t border-border lg:h-screen lg:sticky lg:top-0 lg:w-80 lg:border-l lg:border-t-0 xl:w-96">
-        <Suspense fallback={<div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">Memuat chat...</p></div>}>
-          <LiveChat username={username} tokenId={tokenData?.id} isLive={isLive} isAdmin={false} />
+      <div className="h-[50vh] border-t border-border lg:h-screen lg:sticky lg:top-0 lg:w-80 lg:border-l lg:border-t-0 xl:w-96 flex flex-col">
+        <Suspense fallback={null}>
+          <LivePoll voterId={tokenData?.id || username || "anon"} />
         </Suspense>
+        <div className="flex-1 min-h-0">
+          <Suspense fallback={<div className="flex h-full items-center justify-center"><p className="text-xs text-muted-foreground">Memuat chat...</p></div>}>
+            <LiveChat username={username} tokenId={tokenData?.id} isLive={isLive} isAdmin={false} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

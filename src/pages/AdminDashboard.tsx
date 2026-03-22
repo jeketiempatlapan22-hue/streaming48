@@ -11,6 +11,7 @@ import CoinPackageManager from "@/components/admin/CoinPackageManager";
 import CoinOrderManager from "@/components/admin/CoinOrderManager";
 import SiteSettingsManager from "@/components/admin/SiteSettingsManager";
 import AdminMonitor from "@/components/admin/AdminMonitor";
+import PollManager from "@/components/admin/PollManager";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
@@ -49,6 +50,7 @@ const AdminDashboard = () => {
       case "shows": return <ShowManager />;
       case "coin-packages": return <CoinPackageManager />;
       case "coin-orders": return <CoinOrderManager />;
+      case "polls": return <PollManager />;
       case "monitor": return <AdminMonitor />;
       case "site": return <SiteSettingsManager />;
       default: return <LiveControl />;
