@@ -789,12 +789,12 @@ const Index = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm border-t border-border pt-2">
                   <span className="text-muted-foreground">Saldo Anda</span>
-                  <span className={`font-bold ${coinBalance >= (coinShowTarget?.coin_price || 0) ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                  <span className={`font-bold ${coinBalance >= (coinShowTarget?.is_replay ? (coinShowTarget?.replay_coin_price || 0) : (coinShowTarget?.coin_price || 0)) ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                     {coinBalance} Koin
                   </span>
                 </div>
               </div>
-              {coinBalance < (coinShowTarget?.coin_price || 0) ? (
+              {coinBalance < (coinShowTarget?.is_replay ? (coinShowTarget?.replay_coin_price || 0) : (coinShowTarget?.coin_price || 0)) ? (
                 <div className="space-y-3">
                   <p className="text-center text-sm text-destructive">Koin tidak cukup.</p>
                   <Button className="w-full" variant="outline" onClick={() => { setCoinShowTarget(null); window.location.href = "/coins"; }}>
