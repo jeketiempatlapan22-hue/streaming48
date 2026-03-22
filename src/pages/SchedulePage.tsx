@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Calendar, Clock, Users, Ticket, Coins, MessageCircle, Radio, Film } from "lucide-react";
+import { Calendar, Clock, Users, Ticket, Coins } from "lucide-react";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
+import SharedNavbar from "@/components/SharedNavbar";
+import CountdownTimer from "@/components/CountdownTimer";
 
 interface Show {
   id: string;
