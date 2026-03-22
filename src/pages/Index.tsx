@@ -603,6 +603,7 @@ const Index = () => {
                   { label: "Coin Shop", href: "/coins" },
                   { label: "Membership", href: "/membership" },
                   { label: "FAQ", href: "/faq" },
+                  { label: "Tentang", href: "/about" },
                   { label: "Install App", href: "/install" },
                 ].map(l => (
                   <a key={l.href} href={l.href} className="text-xs text-muted-foreground hover:text-primary transition">{l.label}</a>
