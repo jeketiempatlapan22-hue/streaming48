@@ -57,6 +57,7 @@ const AdminDashboard = () => {
   const renderSection = () => {
     switch (activeSection) {
       case "live": return <><AdminDashboardStats /><div className="mt-6"><LiveControl /></div></>;
+      case "analytics": return <AdminAnalytics />;
       case "tokens": return <TokenFactory />;
       case "shows": return <ShowManager />;
       case "orders": return <SubscriptionOrderManager />;
