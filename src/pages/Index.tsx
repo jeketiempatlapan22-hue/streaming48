@@ -155,6 +155,7 @@ const Index = () => {
     setProofUrl("");
     setPhone("");
     setEmail("");
+    setUploadingProof(false);
   };
 
   const handleCoinBuy = (show: Show) => {
