@@ -538,79 +538,12 @@ const Index = () => {
         </section>
       )}
 
-      {/* Regular Shows Section */}
-      <section id="shows" className="px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-6xl">
-          <motion.h2
-            className="mb-12 text-center text-3xl font-bold text-foreground md:text-4xl"
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          >
-            🎭 Jadwal Show
-          </motion.h2>
-
-          {regularShows.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-12 text-center">
-              <MessageCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-lg font-medium text-foreground">Belum ada show tersedia</p>
-              <p className="mt-2 text-muted-foreground">{settings.purchase_message}</p>
-              {settings.whatsapp_number && (
-                <a
-                  href={`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent("Halo, saya ingin bertanya tentang streaming")}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground transition hover:bg-[hsl(var(--success))]/90"
-                >
-                  <MessageCircle className="h-4 w-4" /> Hubungi WhatsApp
-                </a>
-              )}
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {regularShows.map((show, i) => (
-                <ShowCard
-                  key={show.id}
-                  show={show}
-                  index={i}
-                  isReplayMode={show.is_replay}
-                  redeemedToken={redeemedTokens[show.id]}
-                  accessPassword={accessPasswords[show.id]}
-                  replayPassword={replayPasswords[show.id]}
-                  onBuy={handleBuy}
-                  onCoinBuy={handleCoinBuy}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Replay Shows Section - Link to /replay */}
-      {replayShows.length > 0 && (
-        <section className="px-4 py-10">
-          <div className="mx-auto max-w-6xl">
-            <motion.div
-              className="rounded-2xl border border-border bg-card p-8 text-center"
-              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            >
-              <Film className="mx-auto mb-3 h-10 w-10 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground mb-2">🎬 Replay Show</h2>
-              <p className="text-sm text-muted-foreground mb-4">{replayShows.length} show tersedia untuk ditonton ulang</p>
-              <a
-                href="/replay"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.97]"
-              >
-                <Play className="h-4 w-4" /> Lihat Semua Replay
-              </a>
-            </motion.div>
-          </div>
-        </section>
-      )}
-
-      {/* Descriptions Section */}
+      {/* Descriptions Section - ABOVE shows */}
       {descriptions.length > 0 && (
-        <section className="py-10">
+        <section className="py-8 md:py-10">
           <div className={`mx-auto px-4 ${settings.landing_description_width === "small" ? "max-w-2xl" : settings.landing_description_width === "large" ? "max-w-6xl" : settings.landing_description_width === "full" ? "max-w-full" : "max-w-4xl"}`}>
             {(settings.landing_desc_subtitle || settings.landing_desc_title || settings.landing_desc_quote) && (
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-12 text-center">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 text-center">
                 {settings.landing_desc_subtitle && <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">{settings.landing_desc_subtitle}</p>}
                 {settings.landing_desc_title && (
                   <h2 className="mb-4 text-3xl font-extrabold text-foreground md:text-4xl">
@@ -674,6 +607,106 @@ const Index = () => {
                 ))}
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Membership Banner */}
+      <section className="px-4 pb-6">
+        <div className="mx-auto max-w-6xl">
+          <motion.div
+            className={`rounded-2xl border p-6 text-center ${hasMembershipOpen ? "border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 via-yellow-500/5 to-primary/5" : "border-border bg-card/50"}`}
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          >
+            <Crown className={`mx-auto mb-2 h-8 w-8 ${hasMembershipOpen ? "text-yellow-500" : "text-muted-foreground"}`} />
+            {membershipShows.length > 0 ? (
+              hasMembershipOpen ? (
+                <>
+                  <h3 className="text-lg font-bold text-foreground mb-1">👑 Membership Dibuka!</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{membershipShows.filter(s => !s.is_order_closed).length} paket membership tersedia</p>
+                  <a href="/membership" className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-6 py-2.5 text-sm font-bold text-background transition hover:bg-yellow-500/90 active:scale-[0.97]">
+                    <Crown className="h-4 w-4" /> Lihat Membership
+                  </a>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-bold text-foreground mb-1">Membership Ditutup</h3>
+                  <p className="text-sm text-muted-foreground">Pendaftaran membership sedang tidak tersedia. Pantau terus untuk info terbaru.</p>
+                </>
+              )
+            ) : (
+              <>
+                <h3 className="text-lg font-bold text-foreground mb-1">Membership Belum Tersedia</h3>
+                <p className="text-sm text-muted-foreground">Belum ada paket membership saat ini. Pantau terus untuk update terbaru.</p>
+              </>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Regular Shows Section */}
+      <section id="shows" className="px-4 py-10 md:py-16">
+        <div className="mx-auto max-w-6xl">
+          <motion.h2
+            className="mb-8 text-center text-2xl font-bold text-foreground md:text-3xl"
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          >
+            🎭 Jadwal Show
+          </motion.h2>
+
+          {regularShows.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-12 text-center">
+              <MessageCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium text-foreground">Belum ada show tersedia</p>
+              <p className="mt-2 text-muted-foreground">{settings.purchase_message}</p>
+              {settings.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent("Halo, saya ingin bertanya tentang streaming")}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground transition hover:bg-[hsl(var(--success))]/90"
+                >
+                  <MessageCircle className="h-4 w-4" /> Hubungi WhatsApp
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {regularShows.map((show, i) => (
+                <ShowCard
+                  key={show.id}
+                  show={show}
+                  index={i}
+                  isReplayMode={show.is_replay}
+                  redeemedToken={redeemedTokens[show.id]}
+                  accessPassword={accessPasswords[show.id]}
+                  replayPassword={replayPasswords[show.id]}
+                  onBuy={handleBuy}
+                  onCoinBuy={handleCoinBuy}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Replay Shows Section - Link to /replay */}
+      {replayShows.length > 0 && (
+        <section className="px-4 py-8">
+          <div className="mx-auto max-w-6xl">
+            <motion.div
+              className="rounded-2xl border border-border bg-card p-8 text-center"
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            >
+              <Film className="mx-auto mb-3 h-10 w-10 text-primary" />
+              <h2 className="text-2xl font-bold text-foreground mb-2">🎬 Replay Show</h2>
+              <p className="text-sm text-muted-foreground mb-4">{replayShows.length} show tersedia untuk ditonton ulang</p>
+              <a
+                href="/replay"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.97]"
+              >
+                <Play className="h-4 w-4" /> Lihat Semua Replay
+              </a>
+            </motion.div>
           </div>
         </section>
       )}
