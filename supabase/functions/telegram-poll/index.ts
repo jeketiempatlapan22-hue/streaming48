@@ -135,6 +135,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
+  const resetMatch = text.match(/^RESET\s+(\S+)$/);
+  const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
@@ -160,6 +162,10 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleSetOfflineCommand(supabase, botToken, chatId);
   } else if (msgshowMatch) {
     await handleMsgShowCommand(supabase, botToken, chatId, msgshowMatch[1].trim(), msgshowMatch[2].trim());
+  } else if (resetMatch) {
+    await handlePasswordResetCommand(supabase, botToken, chatId, resetMatch[1].toLowerCase(), 'approve');
+  } else if (tolakResetMatch) {
+    await handlePasswordResetCommand(supabase, botToken, chatId, tolakResetMatch[1].toLowerCase(), 'reject');
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
@@ -190,6 +196,9 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/setlive\` \\- Set stream pertama jadi LIVE\n` +
     `\`/setlive <judul>\` \\- Set stream tertentu jadi LIVE\n` +
     `\`/setoffline\` \\- Set semua stream jadi OFFLINE\n\n` +
+    `🔑 *Password Reset:*\n` +
+    `\`RESET <id>\` \\- Setujui reset password\n` +
+    `\`TOLAK\\_RESET <id>\` \\- Tolak reset password\n\n` +
     `📨 *Messaging:*\n` +
     `\`/msgshow <nama show> | <pesan>\` \\- Kirim WA ke semua pemesan show\n\n` +
     `📢 *Lainnya:*\n` +
@@ -606,6 +615,25 @@ async function handleMsgShowCommand(supabase: any, botToken: string, chatId: str
   } catch (e) {
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
   }
+}
+
+async function handlePasswordResetCommand(supabase: any, botToken: string, chatId: string, shortId: string, action: 'approve' | 'reject') {
+  try {
+    const { data: request } = await supabase.from('password_reset_requests').select('id, user_id, identifier, phone, short_id').eq('short_id', shortId).eq('status', 'pending').maybeSingle();
+    if (!request) { await sendTelegramMessage(botToken, chatId, `⚠️ Request reset ${escapeMarkdown(shortId)} tidak ditemukan\\.`); return; }
+    if (action === 'approve') {
+      await supabase.from('password_reset_requests').update({ status: 'approved', processed_at: new Date().toISOString() }).eq('id', request.id);
+      const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+      if (FONNTE_TOKEN && request.phone) {
+        const resetLink = `https://streaming48.lovable.app/reset-password?token=${request.short_id}`;
+        await sendFonnteWhatsApp(request.phone, `🔑 *Reset Password Disetujui*\n\nKlik link berikut untuk membuat password baru:\n${resetLink}\n\n⏰ Link berlaku 24 jam.`);
+      }
+      await sendTelegramMessage(botToken, chatId, `✅ Reset password ${escapeMarkdown(shortId)} disetujui\\! Link dikirim ke user\\.`);
+    } else {
+      await supabase.from('password_reset_requests').update({ status: 'rejected', processed_at: new Date().toISOString() }).eq('id', request.id);
+      await sendTelegramMessage(botToken, chatId, `❌ Reset password ${escapeMarkdown(shortId)} ditolak\\.`);
+    }
+  } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`); }
 }
 
 function escapeMarkdown(text: string): string {

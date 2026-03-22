@@ -114,6 +114,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
+  const resetMatch = text.match(/^RESET\s+(\S+)$/);
+  const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
@@ -127,6 +129,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (setliveMatch) return await handleSetLive(supabase, setliveMatch[1]?.trim() || null);
   if (isSetOffline) return await handleSetOffline(supabase);
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
+  if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
+  if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     return await handleBulkOrders(supabase, ids, 'approve');
@@ -165,6 +169,10 @@ TIDAK <id> - Tolak order
 /setlive - Set stream pertama jadi LIVE
 /setlive <judul> - Set stream tertentu jadi LIVE
 /setoffline - Set semua stream jadi OFFLINE
+
+🔑 *Password Reset:*
+RESET <id> - Setujui reset password
+TOLAK_RESET <id> - Tolak reset password
 
 📨 *Messaging:*
 /msgshow <nama show> | <pesan> - Kirim WA ke semua pemesan show
@@ -487,6 +495,42 @@ async function processSubOrder(supabase: any, order: any, action: 'approve' | 'r
     } else {
       await supabase.from('subscription_orders').update({ status: 'rejected' }).eq('id', order.id).eq('status', 'pending');
       return `❌ Subscription ${sid} untuk "${showTitle}" ditolak.`;
+    }
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
+async function handlePasswordReset(supabase: any, shortId: string, action: 'approve' | 'reject'): Promise<string> {
+  try {
+    const { data: request } = await supabase
+      .from('password_reset_requests')
+      .select('id, user_id, identifier, phone, short_id')
+      .eq('short_id', shortId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (!request) return `⚠️ Request reset ${shortId} tidak ditemukan atau sudah diproses.`;
+
+    if (action === 'approve') {
+      await supabase.from('password_reset_requests')
+        .update({ status: 'approved', processed_at: new Date().toISOString() })
+        .eq('id', request.id);
+
+      // Send reset link via WhatsApp if phone exists
+      const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+      if (FONNTE_TOKEN && request.phone) {
+        const resetLink = `https://streaming48.lovable.app/reset-password?token=${request.short_id}`;
+        const waMsg = `🔑 *Reset Password Disetujui*\n\nKlik link berikut untuk membuat password baru:\n${resetLink}\n\n⏰ Link berlaku 24 jam.`;
+        await sendFonnteMessage(FONNTE_TOKEN, request.phone, waMsg);
+      }
+
+      return `✅ Reset password ${shortId} disetujui! Link reset dikirim ke user.`;
+    } else {
+      await supabase.from('password_reset_requests')
+        .update({ status: 'rejected', processed_at: new Date().toISOString() })
+        .eq('id', request.id);
+      return `❌ Reset password ${shortId} ditolak.`;
     }
   } catch (e) {
     return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
