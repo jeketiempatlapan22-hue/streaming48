@@ -263,6 +263,13 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
         )}
       </div>
 
+      {/* Emoji Reactions */}
+      <EmojiReactions onSend={(emoji) => {
+        if (!username) return;
+        const msg = emoji;
+        supabase.from("chat_messages").insert({ username, message: msg, user_id: null, token_id: tokenId || null }).then(() => {});
+      }} />
+
       {/* Input */}
       <form onSubmit={sendMessage} className="flex items-center gap-2 border-t border-border bg-card p-3">
         <Input ref={inputRef} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={username ? "Ketik pesan..." : "Masukkan username dulu"} disabled={!username || sending} className="flex-1 border-secondary bg-secondary/50 text-sm placeholder:text-muted-foreground/50 focus:bg-background" />
