@@ -113,6 +113,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const isReplayList = /^\/replay$/i.test(rawText);
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
+  const isShowInfo = /^\/showinfo$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
@@ -128,6 +129,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (isReplayList) return await handleReplayList(supabase);
   if (setliveMatch) return await handleSetLive(supabase, setliveMatch[1]?.trim() || null);
   if (isSetOffline) return await handleSetOffline(supabase);
+  if (isShowInfo) return await handleShowInfo(supabase);
+  if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
@@ -166,8 +169,8 @@ TIDAK <id> - Tolak order
 /replay <nama show> - Toggle mode replay
 
 📡 *Live Stream:*
-/setlive - Set stream pertama jadi LIVE
-/setlive <judul> - Set stream tertentu jadi LIVE
+/showinfo - Info stream & show aktif saat ini
+/setlive - Set stream jadi LIVE
 /setoffline - Set semua stream jadi OFFLINE
 
 🔑 *Password Reset:*
@@ -387,23 +390,25 @@ async function handleReplayToggle(supabase: any, showName: string): Promise<stri
 
 async function handleSetLive(supabase: any, title: string | null): Promise<string> {
   try {
-    if (title) {
-      const { data: streams } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).ilike('title', `%${title}%`).limit(5);
-      if (!streams || streams.length === 0) return `⚠️ Stream "${title}" tidak ditemukan.`;
-      if (streams.length > 1) {
-        let msg = `⚠️ Ditemukan ${streams.length} stream:\n\n`;
-        for (const s of streams) msg += `• ${s.title} (${s.is_live ? '🟢 LIVE' : '🔴 OFF'})\n`;
-        msg += '\n💡 Gunakan nama yang lebih spesifik.';
-        return msg;
-      }
-      await supabase.from('streams').update({ is_live: true }).eq('id', streams[0].id);
-      return `🟢 *Stream LIVE!*\n\n📡 ${streams[0].title} sekarang LIVE!`;
-    } else {
-      const { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
-      if (!stream) return '⚠️ Tidak ada stream aktif.';
-      await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
-      return `🟢 *Stream LIVE!*\n\n📡 ${stream.title} sekarang LIVE!`;
+    // Get or create stream record
+    let { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!stream) {
+      const { data: newStream } = await supabase.from('streams').insert({ title: 'RealTime48', type: 'youtube', url: '', is_active: true, is_live: false }).select().single();
+      stream = newStream;
     }
+    if (!stream) return '⚠️ Gagal membuat stream.';
+
+    await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
+
+    // Get active show info
+    const { data: settings } = await supabase.from('site_settings').select('value').eq('key', 'active_show_id').maybeSingle();
+    let showInfo = '';
+    if (settings?.value) {
+      const { data: show } = await supabase.from('shows').select('title').eq('id', settings.value).maybeSingle();
+      if (show) showInfo = `\n🎭 Show aktif: *${show.title}*`;
+    }
+
+    return `🟢 *Stream LIVE!*\n\n📡 ${stream.title} sekarang LIVE!${showInfo}`;
   } catch (e) {
     return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
   }
@@ -607,6 +612,50 @@ async function notifyTelegram(command: string, result: string) {
     });
   } catch (e) {
     console.error('notifyTelegram error:', e);
+  }
+}
+
+async function handleShowInfo(supabase: any): Promise<string> {
+  try {
+    const { data: stream } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const { data: settings } = await supabase.from('site_settings').select('key, value').in('key', ['active_show_id', 'next_show_time']);
+    const settingsMap: any = {};
+    (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
+
+    let msg = '📡 *INFO STREAM & SHOW*\n\n';
+    if (stream) {
+      msg += `🎬 Stream: *${stream.title}*\n`;
+      msg += `Status: ${stream.is_live ? '🟢 LIVE' : '🔴 OFFLINE'}\n\n`;
+    } else {
+      msg += '⚠️ Tidak ada record stream.\n\n';
+    }
+
+    if (settingsMap.active_show_id) {
+      const { data: show } = await supabase.from('shows').select('title, schedule_date, schedule_time, is_replay').eq('id', settingsMap.active_show_id).maybeSingle();
+      if (show) {
+        msg += `🎭 Show aktif: *${show.title}*\n`;
+        if (show.schedule_date) msg += `📅 Jadwal: ${show.schedule_date} ${show.schedule_time || ''}\n`;
+        if (show.is_replay) msg += `🔁 Mode: Replay\n`;
+      }
+    } else {
+      msg += '🎭 Show aktif: _Belum dipilih_\n';
+    }
+
+    if (settingsMap.next_show_time) {
+      msg += `\n⏰ Countdown: ${new Date(settingsMap.next_show_time).toLocaleString('id-ID')}`;
+    }
+
+    const { data: playlists } = await supabase.from('playlists').select('title, type, is_active').order('sort_order');
+    if (playlists && playlists.length > 0) {
+      msg += '\n\n📋 *Sumber Video:*\n';
+      for (const p of playlists) {
+        msg += `${p.is_active ? '✅' : '❌'} ${p.title} (${p.type})\n`;
+      }
+    }
+
+    return msg;
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
   }
 }
 

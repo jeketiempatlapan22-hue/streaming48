@@ -134,6 +134,7 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isReplayList = /^\/replay$/i.test(rawText);
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
+  const isShowInfo = /^\/showinfo$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
@@ -160,6 +161,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1]?.trim() || null);
   } else if (isSetOffline) {
     await handleSetOfflineCommand(supabase, botToken, chatId);
+  } else if (isShowInfo) {
+    await handleShowInfoCommand(supabase, botToken, chatId);
   } else if (msgshowMatch) {
     await handleMsgShowCommand(supabase, botToken, chatId, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   } else if (resetMatch) {
@@ -193,8 +196,8 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/replay\` \\- Lihat daftar show yang bisa di\\-replay\n` +
     `\`/replay <nama show>\` \\- Toggle mode replay show\n\n` +
     `📡 *Live Stream:*\n` +
-    `\`/setlive\` \\- Set stream pertama jadi LIVE\n` +
-    `\`/setlive <judul>\` \\- Set stream tertentu jadi LIVE\n` +
+    `\`/showinfo\` \\- Info stream \\& show aktif saat ini\n` +
+    `\`/setlive\` \\- Set stream jadi LIVE\n` +
     `\`/setoffline\` \\- Set semua stream jadi OFFLINE\n\n` +
     `🔑 *Password Reset:*\n` +
     `\`RESET <id>\` \\- Setujui reset password\n` +
@@ -547,23 +550,25 @@ async function handleReplayToggle(supabase: any, botToken: string, chatId: strin
 
 async function handleSetLiveCommand(supabase: any, botToken: string, chatId: string, title: string | null) {
   try {
-    if (title) {
-      const { data: streams } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).ilike('title', `%${title}%`).limit(5);
-      if (!streams || streams.length === 0) { await sendTelegramMessage(botToken, chatId, `⚠️ Stream "${escapeMarkdown(title)}" tidak ditemukan\\.`); return; }
-      if (streams.length > 1) {
-        let msg = `⚠️ Ditemukan ${streams.length} stream:\n\n`;
-        for (const s of streams) msg += `• ${escapeMarkdown(s.title)} \\(${s.is_live ? '🟢 LIVE' : '🔴 OFF'}\\)\n`;
-        msg += `\n💡 Gunakan nama yang lebih spesifik\\.`;
-        await sendTelegramMessage(botToken, chatId, msg); return;
-      }
-      await supabase.from('streams').update({ is_live: true }).eq('id', streams[0].id);
-      await sendTelegramMessage(botToken, chatId, `🟢 *Stream LIVE\\!*\n\n📡 ${escapeMarkdown(streams[0].title)} sekarang LIVE\\!`);
-    } else {
-      const { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
-      if (!stream) { await sendTelegramMessage(botToken, chatId, '⚠️ Tidak ada stream aktif\\.'); return; }
-      await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
-      await sendTelegramMessage(botToken, chatId, `🟢 *Stream LIVE\\!*\n\n📡 ${escapeMarkdown(stream.title)} sekarang LIVE\\!`);
+    // Get or create stream record
+    let { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!stream) {
+      const { data: newStream } = await supabase.from('streams').insert({ title: 'RealTime48', type: 'youtube', url: '', is_active: true, is_live: false }).select().single();
+      stream = newStream;
     }
+    if (!stream) { await sendTelegramMessage(botToken, chatId, '⚠️ Gagal membuat stream\\.'); return; }
+
+    await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
+
+    // Get active show info
+    const { data: settings } = await supabase.from('site_settings').select('value').eq('key', 'active_show_id').maybeSingle();
+    let showInfo = '';
+    if (settings?.value) {
+      const { data: show } = await supabase.from('shows').select('title').eq('id', settings.value).maybeSingle();
+      if (show) showInfo = `\n🎭 Show aktif: *${escapeMarkdown(show.title)}*`;
+    }
+
+    await sendTelegramMessage(botToken, chatId, `🟢 *Stream LIVE\\!*\n\n📡 ${escapeMarkdown(stream.title)} sekarang LIVE\\!${showInfo}`);
   } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`); }
 }
 
@@ -716,6 +721,50 @@ function sleep(ms: number): Promise<void> { return new Promise(resolve => setTim
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+async function handleShowInfoCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: stream } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const { data: settings } = await supabase.from('site_settings').select('key, value').in('key', ['active_show_id', 'next_show_time']);
+    const settingsMap: any = {};
+    (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
+
+    let msg = '📡 *INFO STREAM & SHOW*\n\n';
+    if (stream) {
+      msg += `🎬 Stream: *${escapeMarkdown(stream.title)}*\n`;
+      msg += `Status: ${stream.is_live ? '🟢 LIVE' : '🔴 OFFLINE'}\n\n`;
+    } else {
+      msg += '⚠️ Tidak ada record stream\\.\n\n';
+    }
+
+    if (settingsMap.active_show_id) {
+      const { data: show } = await supabase.from('shows').select('title, schedule_date, schedule_time, is_replay').eq('id', settingsMap.active_show_id).maybeSingle();
+      if (show) {
+        msg += `🎭 Show aktif: *${escapeMarkdown(show.title)}*\n`;
+        if (show.schedule_date) msg += `📅 Jadwal: ${escapeMarkdown(show.schedule_date)} ${escapeMarkdown(show.schedule_time || '')}\n`;
+        if (show.is_replay) msg += `🔁 Mode: Replay\n`;
+      }
+    } else {
+      msg += '🎭 Show aktif: _Belum dipilih_\n';
+    }
+
+    if (settingsMap.next_show_time) {
+      msg += `\n⏰ Countdown: ${escapeMarkdown(new Date(settingsMap.next_show_time).toLocaleString('id-ID'))}`;
+    }
+
+    const { data: playlists } = await supabase.from('playlists').select('title, type, is_active').order('sort_order');
+    if (playlists && playlists.length > 0) {
+      msg += '\n\n📋 *Sumber Video:*\n';
+      for (const p of playlists) {
+        msg += `${p.is_active ? '✅' : '❌'} ${escapeMarkdown(p.title)} \\(${escapeMarkdown(p.type)}\\)\n`;
+      }
+    }
+
+    await sendTelegramMessage(botToken, chatId, msg);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
 }
 
 function errorResponse(msg: string) {
