@@ -636,7 +636,7 @@ const Index = () => {
               <div className="grid gap-6 md:grid-cols-2">
                 {descriptions.map((desc: any, i: number) => (
                   <motion.div key={desc.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className={`group overflow-hidden rounded-2xl border border-border bg-card/80 p-6 transition-all hover:border-primary/40 hover:shadow-xl ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : "text-left"}`}>
+                    className={`group overflow-hidden rounded-2xl border border-border bg-card/80 p-6 transition-all hover:border-primary/40 hover:shadow-xl ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : desc.text_align === "justify" ? "text-justify" : "text-left"}`}>
                     {desc.image_url && <img src={desc.image_url} alt={desc.title} className="mb-4 h-40 w-full rounded-xl object-cover" />}
                     <span className="mb-3 inline-block text-3xl">{desc.icon}</span>
                     <h3 className="mb-3 text-xl font-bold text-foreground">{desc.title}</h3>
