@@ -163,6 +163,11 @@ const ViewerProfile = () => {
             )
           )}
         </motion.div>
+
+        {/* Referral */}
+        <Suspense fallback={null}>
+          <ReferralSection />
+        </Suspense>
       </div>
     </div>
   );
