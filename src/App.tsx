@@ -12,6 +12,7 @@ const ViewerAuth = lazy(() => import("./pages/ViewerAuth"));
 const LivePage = lazy(() => import("./pages/LivePage"));
 const CoinShop = lazy(() => import("./pages/CoinShop"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
+const ViewerProfile = lazy(() => import("./pages/ViewerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
