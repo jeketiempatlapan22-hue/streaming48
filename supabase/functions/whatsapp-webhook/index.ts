@@ -170,6 +170,10 @@ TIDAK <id> - Tolak order
 /setlive <judul> - Set stream tertentu jadi LIVE
 /setoffline - Set semua stream jadi OFFLINE
 
+🔑 *Password Reset:*
+RESET <id> - Setujui reset password
+TOLAK_RESET <id> - Tolak reset password
+
 📨 *Messaging:*
 /msgshow <nama show> | <pesan> - Kirim WA ke semua pemesan show
 
