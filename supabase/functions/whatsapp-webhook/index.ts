@@ -107,6 +107,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const balanceMatch = rawText.match(/^\/balance\s+(\S+)$/i);
   const isUsers = /^\/users$/i.test(rawText);
   const isHelp = /^\/(help|start|menu)$/i.test(rawText);
+  const isMembers = /^\/members$/i.test(rawText);
+  const msgmembersMatch = rawText.match(/^\/msgmembers\s+(.+)$/is);
   const deductCoinMatch = rawText.match(/^\/deductcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
   const broadcastMatch = rawText.match(/^\/broadcast\s+(.+)$/is);
   const replayMatch = rawText.match(/^\/replay\s+(.+)$/i);
@@ -124,13 +126,14 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (deductCoinMatch) return await handleDeductCoin(supabase, deductCoinMatch[1], parseInt(deductCoinMatch[2], 10), deductCoinMatch[3] || null);
   if (balanceMatch) return await handleBalance(supabase, balanceMatch[1]);
   if (isUsers) return await handleUsers(supabase);
+  if (isMembers) return await handleMembers(supabase);
+  if (msgmembersMatch) return await handleMsgMembers(supabase, msgmembersMatch[1].trim());
   if (broadcastMatch) return await handleBroadcast(supabase, broadcastMatch[1].trim());
   if (replayMatch) return await handleReplayToggle(supabase, replayMatch[1].trim());
   if (isReplayList) return await handleReplayList(supabase);
   if (setliveMatch) return await handleSetLive(supabase, setliveMatch[1]?.trim() || null);
   if (isSetOffline) return await handleSetOffline(supabase);
   if (isShowInfo) return await handleShowInfo(supabase);
-  if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
