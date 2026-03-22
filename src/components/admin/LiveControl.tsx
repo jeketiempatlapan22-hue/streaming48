@@ -135,7 +135,35 @@ const LiveControl = () => {
         )}
       </div>
 
-      {/* Stream Details */}
+      {/* Player Animation */}
+      <div className="space-y-3 rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Animasi Player</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">Pilih efek animasi yang tampil di atas video player untuk viewer.</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+          {ANIMATION_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={async () => {
+                setPlayerAnimation(opt.value);
+                await supabase.from("site_settings").upsert({ key: "player_animation", value: opt.value } as any, { onConflict: "key" });
+                toast({ title: `Animasi: ${opt.label}` });
+              }}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all active:scale-[0.97] ${
+                playerAnimation === opt.value
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <span>{opt.emoji}</span>
+              <span className="text-xs">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h3 className="text-sm font-semibold text-foreground">📝 Detail Stream</h3>
         <div>
