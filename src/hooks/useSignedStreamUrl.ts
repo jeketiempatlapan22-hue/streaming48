@@ -15,7 +15,8 @@ interface SignedUrlResult {
  */
 export function useSignedStreamUrl(
   playlist: { id: string; type: string; url: string } | null,
-  tokenCode: string
+  tokenCode: string,
+  fingerprint?: string
 ): SignedUrlResult {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,7 @@ export function useSignedStreamUrl(
         body: {
           token_code: tokenCode,
           playlist_id: playlist.id,
+          fingerprint: fingerprint || undefined,
         },
       });
 
@@ -65,7 +67,7 @@ export function useSignedStreamUrl(
       // No fallback to raw URL - keep it protected
       setSignedUrl(null);
     }
-  }, [playlist?.id, playlist?.type, tokenCode]);
+  }, [playlist?.id, playlist?.type, tokenCode, fingerprint]);
 
   useEffect(() => {
     isMounted.current = true;
