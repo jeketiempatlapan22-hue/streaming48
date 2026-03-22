@@ -78,6 +78,7 @@ const LivePage = () => {
   const [playerAnimation, setPlayerAnimation] = useState<AnimationType>("none");
   const [showMismatch, setShowMismatch] = useState(false);
   const [mismatchShowTitle, setMismatchShowTitle] = useState("");
+  const [showReplayBlocked, setShowReplayBlocked] = useState(false);
   const playerRef = useRef<VideoPlayerHandle>(null);
 
   // IMPORTANT: All hooks must be called before any conditional returns
@@ -185,6 +186,16 @@ const LivePage = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Realtime: block access when show becomes replay
+  useEffect(() => {
+    if (!tokenData?.show_id) return;
+    const ch = supabase.channel("show-replay-block")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shows", filter: `id=eq.${tokenData.show_id}` }, (p: any) => {
+        if (p.new?.is_replay === true) setShowReplayBlocked(true);
+      }).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [tokenData?.show_id]);
+
   useEffect(() => {
     if (!tokenData?.id) return;
     const ch = supabase.channel("token-block").on("postgres_changes", { event: "UPDATE", schema: "public", table: "tokens", filter: `id=eq.${tokenData.id}` }, (p: any) => { if (p.new.status === "blocked") setBlocked(true); }).subscribe();
@@ -213,6 +224,8 @@ const LivePage = () => {
   if (loading) return (<div className="flex min-h-screen items-center justify-center bg-background"><div className="text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden shadow-[0_0_16px_hsl(var(--primary)/0.4)] animate-float"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div><p className="text-muted-foreground">Memvalidasi akses...</p></div></div>);
 
   if (blocked) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border-2 border-destructive bg-card p-8 text-center"><div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 animate-pulse"><span className="text-4xl">🚫</span></div><h2 className="mb-2 text-2xl font-black text-destructive uppercase">DIBLOKIR</h2><p className="text-lg font-bold text-destructive mb-2">DILARANG RESTREAM YA DECK!!!</p><p className="text-sm text-muted-foreground mb-4">Token Anda telah diblokir karena pelanggaran.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
+
+  if (showReplayBlocked) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border border-accent/30 bg-card p-8 text-center"><div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10"><span className="text-4xl">🎬</span></div><h2 className="mb-2 text-xl font-bold text-foreground">Show Telah Berakhir</h2><p className="text-sm text-muted-foreground mb-4">Show ini telah dijadikan replay. Akses streaming langsung tidak tersedia lagi.</p><p className="text-xs text-muted-foreground mb-6">Kamu bisa menonton replay dengan menukarkan koin di halaman utama.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
 
   if (error === "device_limit") return (<DeviceLimitScreen tokenCode={tokenCode} getFingerprint={getFingerprint} navigate={navigate} />);
 
