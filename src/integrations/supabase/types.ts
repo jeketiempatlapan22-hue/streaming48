@@ -358,8 +358,10 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          duration_type: string | null
           expires_at: string | null
           id: string
+          is_public: boolean | null
           max_devices: number
           show_id: string | null
           status: string
@@ -368,8 +370,10 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string
+          duration_type?: string | null
           expires_at?: string | null
           id?: string
+          is_public?: boolean | null
           max_devices?: number
           show_id?: string | null
           status?: string
@@ -378,8 +382,10 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          duration_type?: string | null
           expires_at?: string | null
           id?: string
+          is_public?: boolean | null
           max_devices?: number
           show_id?: string | null
           status?: string
@@ -418,6 +424,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_coin_order: { Args: { _order_id: string }; Returns: Json }
       create_token_session: {
         Args: { _fingerprint: string; _token_code: string; _user_agent: string }
         Returns: Json
