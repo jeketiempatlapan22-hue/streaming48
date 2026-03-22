@@ -223,7 +223,8 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/deductcoin <user> <jumlah>\` \\- Kurangi koin\n` +
     `\`/balance <user>\` \\- Cek saldo user\n\n` +
     `👥 *User Management:*\n` +
-    `\`/users\` \\- Daftar semua user\n\n` +
+    `\`/users\` \\- Daftar semua user\n` +
+    `\`/members\` \\- Daftar member langganan\n\n` +
     `🎬 *Show Management:*\n` +
     `\`/shows\` \\- Lihat semua show aktif \\+ ID\n` +
     `\`/replay\` \\- Lihat daftar show replay\n` +
@@ -238,7 +239,8 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`RESET <id>\` \\- Setujui reset password\n` +
     `\`TOLAK\\_RESET <id>\` \\- Tolak reset password\n\n` +
     `📨 *Messaging:*\n` +
-    `\`/msgshow <nama/ID> | <pesan>\` \\- Kirim WA ke pemesan show\n\n` +
+    `\`/msgshow <nama/ID> | <pesan>\` \\- Kirim WA ke pemesan show\n` +
+    `\`/msgmembers <pesan>\` \\- Kirim WA ke semua member\n\n` +
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini\n\n` +
