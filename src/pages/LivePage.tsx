@@ -148,8 +148,9 @@ const LivePage = () => {
       });
 
       if (result.show_id && activeShowId && result.show_id !== activeShowId) {
-        const { data: tokenShow } = await supabase.from("shows").select("title").eq("id", result.show_id).maybeSingle();
-        const { data: activeShow } = await supabase.from("shows").select("title").eq("id", activeShowId).maybeSingle();
+        const { data: allShows } = await supabase.rpc("get_public_shows");
+        const tokenShow = allShows?.find((s: any) => s.id === result.show_id);
+        const activeShow = allShows?.find((s: any) => s.id === activeShowId);
         setShowMismatch(true);
         setMismatchShowTitle(
           `Token kamu untuk show "${tokenShow?.title || "lain"}", sedangkan yang sedang live adalah "${activeShow?.title || "show lain"}".`

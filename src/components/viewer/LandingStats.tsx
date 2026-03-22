@@ -26,12 +26,14 @@ const LandingStats = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [profiles, shows, balances, replays] = await Promise.all([
+      const [profiles, showsRpc, balances] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("shows").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.rpc("get_public_shows"),
         supabase.from("coin_balances").select("balance"),
-        supabase.from("shows").select("id", { count: "exact", head: true }).eq("is_replay", true).eq("is_active", true),
       ]);
+      const showsList = showsRpc.data || [];
+      const shows = { count: showsList.length };
+      const replays = { count: showsList.filter((s: any) => s.is_replay).length };
       const totalCoins = (balances.data || []).reduce((s, r) => s + (r.balance || 0), 0);
       setStats({
         users: profiles.count || 0,
