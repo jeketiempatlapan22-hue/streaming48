@@ -129,6 +129,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isUsers = /^\/users$/i.test(rawText);
   const isHelp = /^\/(help|start)$/i.test(rawText);
   const isShows = /^\/shows$/i.test(rawText);
+  const isMembers = /^\/members$/i.test(rawText);
+  const msgmembersMatch = rawText.match(/^\/msgmembers\s+(.+)$/is);
   const deductCoinMatch = rawText.match(/^\/deductcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
   const broadcastMatch = rawText.match(/^\/broadcast\s+(.+)$/is);
   const replayMatch = rawText.match(/^\/replay\s+#([a-f0-9]{6})$/i);
