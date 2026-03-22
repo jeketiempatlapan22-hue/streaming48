@@ -114,14 +114,27 @@ const LivePoll = ({ voterId }: LivePollProps) => {
 
     try {
       if (previousVote !== null) {
-        await supabase.from("poll_votes").delete().eq("poll_id", poll.id).eq("voter_id", voterId);
+        // Use secure RPC to change vote (no public DELETE policy)
+        const { error } = await supabase.rpc("change_poll_vote" as any, {
+          _poll_id: poll.id,
+          _voter_id: voterId,
+          _new_option_index: optionIndex,
+        });
+        if (error) {
+          setMyVote(previousVote);
+          await fetchVotes(poll.id);
+        }
+      } else {
+        const { error } = await supabase.from("poll_votes").insert({
+          poll_id: poll.id,
+          voter_id: voterId,
+          option_index: optionIndex,
+        });
+        if (error) {
+          setMyVote(previousVote);
+          await fetchVotes(poll.id);
+        }
       }
-      const { error } = await supabase.from("poll_votes").insert({
-        poll_id: poll.id,
-        voter_id: voterId,
-        option_index: optionIndex,
-      });
-      if (error) {
         setMyVote(previousVote);
         await fetchVotes(poll.id);
       }
