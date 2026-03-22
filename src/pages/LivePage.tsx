@@ -8,6 +8,7 @@ import PipButton from "@/components/viewer/PipButton";
 import SecurityAlert from "@/components/viewer/SecurityAlert";
 import PlayerAnimations, { AnimationType } from "@/components/viewer/PlayerAnimations";
 import ViewerBroadcast from "@/components/viewer/ViewerBroadcast";
+import { useSignedStreamUrl } from "@/hooks/useSignedStreamUrl";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
@@ -132,6 +133,12 @@ const LivePage = () => {
 
   const isLive = stream?.is_live || false;
 
+  const { signedUrl, loading: signedLoading } = useSignedStreamUrl(
+    activePlaylist ? { id: activePlaylist.id, type: activePlaylist.type, url: activePlaylist.url } : null,
+    tokenCode
+  );
+
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
       <ConnectionStatus />
@@ -149,7 +156,15 @@ const LivePage = () => {
         <div className="player-area relative">
           {isLive && activePlaylist ? (
             <div className="relative">
-              <VideoPlayer url={activePlaylist.url} type={activePlaylist.type as StreamType} />
+              {signedUrl ? (
+                <VideoPlayer url={signedUrl} type={activePlaylist.type as StreamType} />
+              ) : signedLoading ? (
+                <div className="flex aspect-video w-full items-center justify-center bg-card">
+                  <p className="text-sm text-muted-foreground animate-pulse">Memuat stream...</p>
+                </div>
+              ) : (
+                <VideoPlayer url={activePlaylist.url} type={activePlaylist.type as StreamType} />
+              )}
               {tokenData?.code && <Suspense fallback={null}><Watermark tokenCode={tokenData.code} /></Suspense>}
             </div>
           ) : (
