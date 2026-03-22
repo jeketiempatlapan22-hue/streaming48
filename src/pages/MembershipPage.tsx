@@ -133,9 +133,9 @@ const MembershipPage = () => {
   const handleCoinPurchase = async () => {
     if (!selectedShow || !phone || !email) return;
     setSubmitting(true);
-    const { data, error } = await supabase.rpc("redeem_coins_for_membership", {
+    const { data, error } = await supabase.rpc("redeem_coins_for_membership" as any, {
       _show_id: selectedShow.id, _phone: phone, _email: email,
-    } as any);
+    });
     setSubmitting(false);
     if (error || !(data as any)?.success) {
       toast({ title: (data as any)?.error || "Gagal menukar koin", variant: "destructive" }); return;
