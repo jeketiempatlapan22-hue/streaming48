@@ -163,20 +163,18 @@ const LivePage = () => {
 
   useEffect(() => {
     if (!tokenCode) return;
-    const fp = getFingerprint();
+    const fpVal = getFingerprint();
     const releaseSession = () => {
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/release_token_session`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fp }),
+        body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fpVal }),
         keepalive: true,
       }).catch(() => {});
     };
     window.addEventListener("beforeunload", releaseSession);
-    window.addEventListener("pagehide", releaseSession);
     return () => {
       window.removeEventListener("beforeunload", releaseSession);
-      window.removeEventListener("pagehide", releaseSession);
     };
   }, [tokenCode, getFingerprint]);
 
