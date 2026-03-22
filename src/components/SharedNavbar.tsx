@@ -71,9 +71,7 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
             <SheetContent side="right" className="w-80 border-border bg-card">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-foreground">
-                  <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                    <Shield className="h-3 w-3 text-primary" />
-                  </div>
+                  <img src={logo} alt="RealTime48" className="h-6 w-6 rounded-full object-cover" />
                   RealTime48
                 </SheetTitle>
               </SheetHeader>

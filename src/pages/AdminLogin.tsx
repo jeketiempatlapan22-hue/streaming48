@@ -46,8 +46,8 @@ const AdminLogin = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 border-2 border-primary/40 shadow-[0_0_20px_hsl(var(--primary)/0.3)] animate-float">
-            <span className="text-2xl font-bold text-primary">RT</span>
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full overflow-hidden shadow-[0_0_20px_hsl(var(--primary)/0.3)] animate-float">
+            <img src={logo} alt="RealTime48" className="h-full w-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
             Real<span className="text-primary">Time48</span>
