@@ -98,6 +98,7 @@ const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin
 ChatMessageItem.displayName = "ChatMessageItem";
 
 const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMessage, onBlockUser, onToggleChatMod }: LiveChatProps) => {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pinnedMessages, setPinnedMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
