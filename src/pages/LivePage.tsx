@@ -186,6 +186,16 @@ const LivePage = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Realtime: block access when show becomes replay
+  useEffect(() => {
+    if (!tokenData?.show_id) return;
+    const ch = supabase.channel("show-replay-block")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shows", filter: `id=eq.${tokenData.show_id}` }, (p: any) => {
+        if (p.new?.is_replay === true) setShowReplayBlocked(true);
+      }).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [tokenData?.show_id]);
+
   useEffect(() => {
     if (!tokenData?.id) return;
     const ch = supabase.channel("token-block").on("postgres_changes", { event: "UPDATE", schema: "public", table: "tokens", filter: `id=eq.${tokenData.id}` }, (p: any) => { if (p.new.status === "blocked") setBlocked(true); }).subscribe();
