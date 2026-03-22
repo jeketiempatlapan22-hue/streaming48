@@ -477,12 +477,18 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const cloudflareSrc = useMemo(() => {
     if (playlist.type !== "cloudflare") return "";
     const url = playlist.url;
-    if (url.includes("cloudflarestream.com") && url.includes("/iframe")) return url;
-    if (url.includes("cloudflarestream.com")) {
+    let base = "";
+    if (url.includes("cloudflarestream.com") && url.includes("/iframe")) {
+      base = url;
+    } else if (url.includes("cloudflarestream.com")) {
       const id = url.split("/").filter(Boolean).pop();
-      return `https://iframe.videodelivery.net/${id}`;
+      base = `https://iframe.videodelivery.net/${id}`;
+    } else {
+      base = `https://iframe.videodelivery.net/${url}`;
     }
-    return `https://iframe.videodelivery.net/${url}`;
+    // Add autoplay params
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}autoplay=true&preload=auto`;
   }, [playlist.type, playlist.url]);
 
   return (
