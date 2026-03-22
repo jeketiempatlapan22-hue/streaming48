@@ -615,6 +615,50 @@ async function notifyTelegram(command: string, result: string) {
   }
 }
 
+async function handleShowInfo(supabase: any): Promise<string> {
+  try {
+    const { data: stream } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const { data: settings } = await supabase.from('site_settings').select('key, value').in('key', ['active_show_id', 'next_show_time']);
+    const settingsMap: any = {};
+    (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
+
+    let msg = '📡 *INFO STREAM & SHOW*\n\n';
+    if (stream) {
+      msg += `🎬 Stream: *${stream.title}*\n`;
+      msg += `Status: ${stream.is_live ? '🟢 LIVE' : '🔴 OFFLINE'}\n\n`;
+    } else {
+      msg += '⚠️ Tidak ada record stream.\n\n';
+    }
+
+    if (settingsMap.active_show_id) {
+      const { data: show } = await supabase.from('shows').select('title, schedule_date, schedule_time, is_replay').eq('id', settingsMap.active_show_id).maybeSingle();
+      if (show) {
+        msg += `🎭 Show aktif: *${show.title}*\n`;
+        if (show.schedule_date) msg += `📅 Jadwal: ${show.schedule_date} ${show.schedule_time || ''}\n`;
+        if (show.is_replay) msg += `🔁 Mode: Replay\n`;
+      }
+    } else {
+      msg += '🎭 Show aktif: _Belum dipilih_\n';
+    }
+
+    if (settingsMap.next_show_time) {
+      msg += `\n⏰ Countdown: ${new Date(settingsMap.next_show_time).toLocaleString('id-ID')}`;
+    }
+
+    const { data: playlists } = await supabase.from('playlists').select('title, type, is_active').order('sort_order');
+    if (playlists && playlists.length > 0) {
+      msg += '\n\n📋 *Sumber Video:*\n';
+      for (const p of playlists) {
+        msg += `${p.is_active ? '✅' : '❌'} ${p.title} (${p.type})\n`;
+      }
+    }
+
+    return msg;
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
