@@ -267,6 +267,7 @@ const Index = () => {
   return (
     <div className="relative min-h-screen bg-background">
       <ConnectionStatus />
+      <ViewerBroadcast />
       <LandingFloatingEmojis />
       <LiveNowBanner isLive={isStreamLive} />
 
