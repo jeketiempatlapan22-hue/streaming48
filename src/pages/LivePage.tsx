@@ -123,9 +123,18 @@ const LivePage = () => {
       setError("no_token"); setLoading(false); return;
     }
     const validate = async () => {
+      const { data: settingsEarly } = await supabase.from("site_settings").select("*");
+      if (settingsEarly) settingsEarly.forEach((s: any) => {
+        if (s.key === "whatsapp_number") setWhatsappNumber(s.value);
+      });
+
       const { data: validation } = await supabase.rpc("validate_token", { _code: tokenCode });
       const result = validation as any;
-      if (!result?.valid) { setError(result?.error || "Token tidak valid."); setLoading(false); return; }
+      if (!result?.valid) {
+        const errText = String(result?.error || "").toLowerCase();
+        if (errText.includes("diblokir")) { setBlocked(true); setLoading(false); return; }
+        setError(result?.error || "Token tidak valid."); setLoading(false); return;
+      }
       const fp = getFingerprint();
       const { data: sess } = await supabase.rpc("create_token_session", { _token_code: tokenCode, _fingerprint: fp, _user_agent: navigator.userAgent });
       const sd = sess as any;
