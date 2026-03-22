@@ -75,7 +75,7 @@ const LivePage = () => {
       const { data: sess } = await supabase.rpc("create_token_session", { _token_code: tokenCode, _fingerprint: fp, _user_agent: navigator.userAgent });
       const sd = sess as any;
       if (!sd?.success) { setError("device_limit"); setLoading(false); return; }
-      setTokenData({ id: result.id, code: result.code });
+      setTokenData({ id: result.id, code: result.code, show_id: result.show_id });
       const [streamRes, playlistRes, settingsRes] = await Promise.all([
         supabase.from("streams").select("*").limit(1).single(),
         supabase.from("playlists").select("*").eq("is_active", true).order("sort_order"),
@@ -83,11 +83,26 @@ const LivePage = () => {
       ]);
       if (streamRes.data) setStream(streamRes.data);
       if (playlistRes.data?.length) { setPlaylists(playlistRes.data); setActivePlaylist(playlistRes.data[0]); }
+      
+      let activeShowId = "";
       if (settingsRes.data) settingsRes.data.forEach((s: any) => {
         if (s.key === "next_show_time") setNextShowTime(s.value);
         if (s.key === "whatsapp_number") setWhatsappNumber(s.value);
         if (s.key === "player_animation") setPlayerAnimation((s.value || "none") as AnimationType);
+        if (s.key === "active_show_id") activeShowId = s.value;
       });
+
+      // Validate show_id: token must match the currently active show
+      if (result.show_id && activeShowId && result.show_id !== activeShowId) {
+        // Fetch show titles for better error message
+        const { data: tokenShow } = await supabase.from("shows").select("title").eq("id", result.show_id).maybeSingle();
+        const { data: activeShow } = await supabase.from("shows").select("title").eq("id", activeShowId).maybeSingle();
+        setShowMismatch(true);
+        setMismatchShowTitle(
+          `Token kamu untuk show "${tokenShow?.title || "lain"}", sedangkan yang sedang live adalah "${activeShow?.title || "show lain"}".`
+        );
+      }
+
       setLoading(false);
     };
     validate();
