@@ -14,8 +14,9 @@ interface CoinDialogProps {
   isReplayMode?: boolean;
 }
 
-const CoinDialog = ({ show, coinBalance, coinRedeeming, coinResult, onClose, onRedeem }: CoinDialogProps) => {
+const CoinDialog = ({ show, coinBalance, coinRedeeming, coinResult, onClose, onRedeem, isReplayMode = false }: CoinDialogProps) => {
   const { toast } = useToast();
+  const effectivePrice = isReplayMode ? (show?.replay_coin_price || 0) : (show?.coin_price || 0);
 
   return (
     <Dialog open={!!show} onOpenChange={onClose}>
