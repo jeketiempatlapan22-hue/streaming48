@@ -5,6 +5,8 @@ import VideoPlayer from "@/components/VideoPlayer";
 import logo from "@/assets/logo.png";
 import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 import PipButton from "@/components/viewer/PipButton";
+import SecurityAlert from "@/components/viewer/SecurityAlert";
+import PlayerAnimations, { AnimationType } from "@/components/viewer/PlayerAnimations";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
