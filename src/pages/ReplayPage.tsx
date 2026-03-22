@@ -163,8 +163,15 @@ const ReplayPage = () => {
 
   const filteredShows = shows.filter((s) => {
     const q = searchQuery.toLowerCase();
-    return s.title.toLowerCase().includes(q) || (s.schedule_date || "").toLowerCase().includes(q);
+    const matchesSearch = s.title.toLowerCase().includes(q) || 
+      (s.schedule_date || "").toLowerCase().includes(q) ||
+      (s.lineup || "").toLowerCase().includes(q) ||
+      (s.category_member || "").toLowerCase().includes(q);
+    const matchesCategory = categoryFilter === "all" || (s.category || "regular") === categoryFilter;
+    return matchesSearch && matchesCategory;
   });
+
+  const availableCategories = ["all", ...Array.from(new Set(shows.map((s) => s.category || "regular")))];
 
   return (
     <div className="min-h-screen bg-background">
