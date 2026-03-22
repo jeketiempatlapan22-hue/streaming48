@@ -109,6 +109,9 @@ const ShowManager = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-foreground truncate">{show.title}</p>
+                  <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground" title="Show ID untuk bot command">
+                    #{show.id.replace(/-/g, '').slice(0, 6)}
+                  </span>
                   {show.is_subscription && <Crown className="h-3 w-3 text-yellow-500" />}
                   {show.is_replay && <Film className="h-3 w-3 text-accent" />}
                 </div>
@@ -129,7 +132,13 @@ const ShowManager = () => {
         {editing && (
           <div className="space-y-4 rounded-xl border border-border bg-card p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">Edit Show</h3>
+              <div>
+                <h3 className="font-semibold text-foreground">Edit Show</h3>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                  ID: #{editing.id.replace(/-/g, '').slice(0, 6)}
+                  <button className="ml-2 text-primary hover:underline" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(editing.id.replace(/-/g, '').slice(0, 6)); sonnerToast.success("ID disalin!"); }}>Salin</button>
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button variant="ghost" size="icon" className="h-8 w-8"
                   onClick={() => { const u = { ...editing, is_active: !editing.is_active }; setEditing(u); updateShow(u); }}>
