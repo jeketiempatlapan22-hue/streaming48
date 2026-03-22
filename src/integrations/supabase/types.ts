@@ -953,6 +953,10 @@ export type Database = {
         Args: { _identifier: string; _new_password?: string }
         Returns: Json
       }
+      self_reset_token_session: {
+        Args: { _fingerprint: string; _token_code: string }
+        Returns: Json
+      }
       validate_token: { Args: { _code: string }; Returns: Json }
     }
     Enums: {
