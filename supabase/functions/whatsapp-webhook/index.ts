@@ -119,6 +119,10 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
+  const blocktokenMatch = rawText.match(/^\/blocktoken\s+(\S+)$/i);
+  const unblocktokenMatch = rawText.match(/^\/unblocktoken\s+(\S+)$/i);
+  const resettokenMatch = rawText.match(/^\/resettoken\s+(\S+)$/i);
+  const deletetokenMatch = rawText.match(/^\/deletetoken\s+(\S+)$/i);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
@@ -135,6 +139,10 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (isSetOffline) return await handleSetOffline(supabase);
   if (isShowInfo) return await handleShowInfo(supabase);
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
+  if (blocktokenMatch) return await handleTokenCmd(supabase, blocktokenMatch[1], 'block');
+  if (unblocktokenMatch) return await handleTokenCmd(supabase, unblocktokenMatch[1], 'unblock');
+  if (resettokenMatch) return await handleTokenCmd(supabase, resettokenMatch[1], 'reset');
+  if (deletetokenMatch) return await handleTokenCmd(supabase, deletetokenMatch[1], 'delete');
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
@@ -177,7 +185,13 @@ TIDAK <id> - Tolak order
 /setlive - Set stream jadi LIVE
 /setoffline - Set semua stream jadi OFFLINE
 
-🔑 *Password Reset:*
+🔑 *Token Management:*
+/blocktoken <kode> - Blokir token user
+/unblocktoken <kode> - Buka blokir token
+/resettoken <kode> - Reset sesi token
+/deletetoken <kode> - Hapus token
+
+🔐 *Password Reset:*
 RESET <id> - Setujui reset password
 TOLAK_RESET <id> - Tolak reset password
 
@@ -718,6 +732,33 @@ async function handleShowInfo(supabase: any): Promise<string> {
     }
 
     return msg;
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
+async function handleTokenCmd(supabase: any, tokenCode: string, action: 'block' | 'unblock' | 'reset' | 'delete'): Promise<string> {
+  try {
+    const { data: token } = await supabase.from('tokens').select('id, code, status').eq('code', tokenCode).maybeSingle();
+    if (!token) return `⚠️ Token "${tokenCode}" tidak ditemukan.`;
+
+    if (action === 'block') {
+      await supabase.from('tokens').update({ status: 'blocked' }).eq('id', token.id);
+      await supabase.from('token_sessions').update({ is_active: false }).eq('token_id', token.id);
+      return `🚫 Token ${tokenCode} telah *diblokir*! Semua sesi dimatikan.`;
+    } else if (action === 'unblock') {
+      await supabase.from('tokens').update({ status: 'active' }).eq('id', token.id);
+      return `✅ Token ${tokenCode} telah *dibuka blokirnya*.`;
+    } else if (action === 'reset') {
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      return `🔄 Semua sesi untuk token ${tokenCode} telah *direset*.`;
+    } else if (action === 'delete') {
+      await supabase.from('chat_messages').delete().eq('token_id', token.id);
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      await supabase.from('tokens').delete().eq('id', token.id);
+      return `🗑️ Token ${tokenCode} telah *dihapus* beserta semua sesi dan pesan chat.`;
+    }
+    return '⚠️ Aksi tidak dikenal.';
   } catch (e) {
     return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
   }
