@@ -952,6 +952,36 @@ async function handleShowInfoCommand(supabase: any, botToken: string, chatId: st
   }
 }
 
+async function handleTokenCommand(supabase: any, botToken: string, chatId: string, tokenCode: string, action: 'block' | 'unblock' | 'reset' | 'delete') {
+  try {
+    const { data: token } = await supabase.from('tokens').select('id, code, status').eq('code', tokenCode).maybeSingle();
+    if (!token) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ Token \`${escapeMarkdown(tokenCode)}\` tidak ditemukan\\.`);
+      return;
+    }
+
+    if (action === 'block') {
+      await supabase.from('tokens').update({ status: 'blocked' }).eq('id', token.id);
+      // Also kill active sessions
+      await supabase.from('token_sessions').update({ is_active: false }).eq('token_id', token.id);
+      await sendTelegramMessage(botToken, chatId, `🚫 Token \`${escapeMarkdown(tokenCode)}\` telah *diblokir*\\! Semua sesi dimatikan\\.`);
+    } else if (action === 'unblock') {
+      await supabase.from('tokens').update({ status: 'active' }).eq('id', token.id);
+      await sendTelegramMessage(botToken, chatId, `✅ Token \`${escapeMarkdown(tokenCode)}\` telah *dibuka blokirnya*\\.`);
+    } else if (action === 'reset') {
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      await sendTelegramMessage(botToken, chatId, `🔄 Semua sesi untuk token \`${escapeMarkdown(tokenCode)}\` telah *direset*\\.`);
+    } else if (action === 'delete') {
+      await supabase.from('chat_messages').delete().eq('token_id', token.id);
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      await supabase.from('tokens').delete().eq('id', token.id);
+      await sendTelegramMessage(botToken, chatId, `🗑️ Token \`${escapeMarkdown(tokenCode)}\` telah *dihapus* beserta semua sesi dan pesan chat\\.`);
+    }
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
 function errorResponse(msg: string) {
   console.error('telegram-poll error:', msg);
   return jsonResponse({ error: msg }, 500);

@@ -185,7 +185,13 @@ TIDAK <id> - Tolak order
 /setlive - Set stream jadi LIVE
 /setoffline - Set semua stream jadi OFFLINE
 
-🔑 *Password Reset:*
+🔑 *Token Management:*
+/blocktoken <kode> - Blokir token user
+/unblocktoken <kode> - Buka blokir token
+/resettoken <kode> - Reset sesi token
+/deletetoken <kode> - Hapus token
+
+🔐 *Password Reset:*
 RESET <id> - Setujui reset password
 TOLAK_RESET <id> - Tolak reset password
 
