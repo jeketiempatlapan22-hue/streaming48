@@ -189,7 +189,7 @@ async function handleStatusCommand(supabase: any, botToken: string, chatId: stri
       message += `\n💡 Konfirmasi semua: \`YA ${allIds.join(',')}\`\n`;
     } else { message += '🎬 *Subscription:* Tidak ada order pending\n'; }
 
-    message += '\n📌 *Commands:*\n`YA <id>` \\- Konfirmasi order\n`YA id1,id2,id3` \\- Bulk konfirmasi\n`TIDAK <id>` \\- Tolak order\n`/status` \\- Cek order pending';
+    message += '\n📌 *Commands:*\n`YA <id>` \\- Konfirmasi order\n`YA id1,id2,id3` \\- Bulk konfirmasi\n`TIDAK <id>` \\- Tolak order\n`/addcoin <username> <jumlah>` \\- Tambah koin\n`/status` \\- Cek order pending';
     await sendTelegramMessage(botToken, chatId, message);
   } catch { await sendTelegramMessage(botToken, chatId, '⚠️ Error mengambil data status'); }
 }
