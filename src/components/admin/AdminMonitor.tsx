@@ -11,6 +11,7 @@ interface ChatMsg {
   created_at: string;
   is_admin: boolean;
   is_pinned: boolean;
+  is_deleted: boolean;
   token_id: string | null;
 }
 
