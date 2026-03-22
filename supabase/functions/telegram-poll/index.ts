@@ -158,6 +158,10 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleBalanceCommand(supabase, botToken, chatId, balanceMatch[1]);
   } else if (isUsers) {
     await handleUsersCommand(supabase, botToken, chatId);
+  } else if (isMembers) {
+    await handleMembersCommand(supabase, botToken, chatId);
+  } else if (msgmembersMatch) {
+    await handleMsgMembersCommand(supabase, botToken, chatId, msgmembersMatch[1].trim());
   } else if (broadcastMatch) {
     await handleBroadcastCommand(supabase, botToken, chatId, broadcastMatch[1].trim());
   } else if (replayMatch) {
