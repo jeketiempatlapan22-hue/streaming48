@@ -10,6 +10,7 @@ import ShowManager from "@/components/admin/ShowManager";
 import CoinPackageManager from "@/components/admin/CoinPackageManager";
 import CoinOrderManager from "@/components/admin/CoinOrderManager";
 import SiteSettingsManager from "@/components/admin/SiteSettingsManager";
+import AdminMonitor from "@/components/admin/AdminMonitor";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
