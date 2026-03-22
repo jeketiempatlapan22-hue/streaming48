@@ -126,8 +126,7 @@ export function useShowPurchase() {
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, file);
       if (upErr) throw upErr;
-      const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 86400);
-      setProofUrl(urlData?.signedUrl || "");
+      setProofFilePath(path);
       if (selectedShow.is_subscription) setPurchaseStep("info");
     } catch (err: any) {
       toast.error("Upload gagal: " + (err?.message || "Coba lagi"));
