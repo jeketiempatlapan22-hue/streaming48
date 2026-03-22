@@ -220,8 +220,8 @@ const Index = () => {
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("coin-proofs").upload(path, file);
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from("coin-proofs").getPublicUrl(path);
-      setProofUrl(urlData.publicUrl);
+      const { data: urlData } = await supabase.storage.from("coin-proofs").createSignedUrl(path, 86400);
+      setProofUrl(urlData?.signedUrl || "");
       if (selectedShow.is_subscription) setPurchaseStep("info");
     } catch {
       toast.error("Upload gagal, coba lagi");
