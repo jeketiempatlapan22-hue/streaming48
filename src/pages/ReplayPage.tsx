@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import SharedNavbar from "@/components/SharedNavbar";
-import { Search, Calendar, Clock, Users, Coins, Play, Copy, Ticket } from "lucide-react";
+import { Search, Calendar, Clock, Users, Coins, Play, Copy, Lock, Ticket } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import type { Show } from "@/types/show";
 
 const SHOW_CATEGORIES: Record<string, { label: string; color: string }> = {
   regular: { label: "🎭 Reguler", color: "bg-primary/20 text-primary" },
-  birthday: { label: "🎂 Ulang Tahun", color: "bg-pink-500/20 text-pink-400" },
+  birthday: { label: "🎂 Ulang Tahun/STS", color: "bg-pink-500/20 text-pink-400" },
   special: { label: "⭐ Spesial", color: "bg-yellow-500/20 text-yellow-400" },
   anniversary: { label: "🎉 Anniversary", color: "bg-purple-500/20 text-purple-400" },
   last_show: { label: "👋 Last Show", color: "bg-red-500/20 text-red-400" },
@@ -46,6 +46,7 @@ const ReplayPage = () => {
   const [replayTarget, setReplayTarget] = useState<Show | null>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [replayPasswords, setReplayPasswords] = useState<Record<string, string>>({});
+  const [replayModal, setReplayModal] = useState<{ showId: string; password: string } | null>(null);
   const [replayResult, setReplayResult] = useState<{ replay_password: string; remaining_balance: number } | null>(null);
 
   useEffect(() => {
@@ -54,8 +55,8 @@ const ReplayPage = () => {
         supabase.rpc("get_public_shows"),
         supabase.from("streams").select("is_live").limit(1).single(),
       ]);
-      const streamLive = streamRes.data?.is_live ?? true;
       if (showsRes.data) {
+        const streamLive = streamRes.data?.is_live ?? true;
         const pastShows = (showsRes.data as any[]).filter((s) => {
           if (s.is_subscription || s.replay_coin_price <= 0) return false;
           if (s.is_replay) return true;
@@ -76,35 +77,87 @@ const ReplayPage = () => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setCoinUser(session.user);
-        const { data: bal } = await supabase.from("coin_balances").select("balance").eq("user_id", session.user.id).maybeSingle();
+        const user = session.user;
+        setCoinUser(user);
+        const { data: bal } = await supabase.from("coin_balances").select("balance").eq("user_id", user.id).maybeSingle();
         setCoinBalance(bal?.balance || 0);
-        try { setReplayPasswords(JSON.parse(localStorage.getItem(`replay_passwords_${session.user.id}`) || "{}")); } catch {}
+
+        // Load replay passwords from localStorage
+        let storedPw: Record<string, string> = {};
+        try {
+          storedPw = JSON.parse(localStorage.getItem(`replay_passwords_${user.id}`) || "{}");
+        } catch {}
+
+        // Check coin_transactions for past replay purchases not in localStorage
+        const { data: txns } = await supabase
+          .from("coin_transactions")
+          .select("reference_id")
+          .eq("user_id", user.id)
+          .eq("type", "replay_redeem")
+          .order("created_at", { ascending: false });
+
+        if (txns) {
+          for (const tx of txns) {
+            if (tx.reference_id && !storedPw[tx.reference_id]) {
+              storedPw[tx.reference_id] = "__purchased__";
+            }
+          }
+          localStorage.setItem(`replay_passwords_${user.id}`, JSON.stringify(storedPw));
+        }
+
+        // Fetch real access passwords from DB for purchased shows
+        try {
+          const { data: pwData } = await supabase.rpc("get_purchased_show_passwords" as any);
+          if (pwData && typeof pwData === "object") {
+            const pwMap = pwData as Record<string, string>;
+            for (const [showId, pw] of Object.entries(pwMap)) {
+              if (pw) storedPw[showId] = pw;
+            }
+            localStorage.setItem(`replay_passwords_${user.id}`, JSON.stringify(storedPw));
+          }
+        } catch {}
+
+        setReplayPasswords(storedPw);
+
+        // Realtime balance subscription
+        const balCh = supabase
+          .channel(`replay-balance-${user.id}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "coin_balances", filter: `user_id=eq.${user.id}` }, (p: any) => {
+            if (p.new?.balance !== undefined) setCoinBalance(p.new.balance);
+          })
+          .subscribe();
+        return () => { supabase.removeChannel(balCh); };
       }
     };
-    fetchUser();
+    const cleanup = fetchUser();
 
     const showCh = supabase.channel("replay-shows").on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => fetchData()).subscribe();
-    return () => { supabase.removeChannel(showCh); };
+    const streamCh = supabase.channel("replay-streams").on("postgres_changes", { event: "*", schema: "public", table: "streams" }, () => fetchData()).subscribe();
+
+    return () => {
+      supabase.removeChannel(showCh);
+      supabase.removeChannel(streamCh);
+      cleanup.then((c) => c?.());
+    };
   }, []);
 
   const handleReplayRedeem = async () => {
     if (!replayTarget || !coinUser) return;
     setRedeeming(true);
-    const { data, error } = await supabase.rpc("redeem_coins_for_token", { _show_id: replayTarget.id });
+    const { data, error } = await supabase.rpc("redeem_coins_for_replay" as any, { _show_id: replayTarget.id });
     setRedeeming(false);
     const result = data as any;
     if (error || !result?.success) {
       toast({ title: "Gagal menukar koin", description: result?.error || error?.message, variant: "destructive" });
       return;
     }
-    const pw = result.access_password || "";
-    setReplayResult({ replay_password: pw, remaining_balance: result.remaining_balance });
+    setReplayResult({ replay_password: result.replay_password, remaining_balance: result.remaining_balance });
     setCoinBalance(result.remaining_balance);
+
     const stored = JSON.parse(localStorage.getItem(`replay_passwords_${coinUser.id}`) || "{}");
-    stored[replayTarget.id] = pw;
+    stored[replayTarget.id] = result.replay_password;
     localStorage.setItem(`replay_passwords_${coinUser.id}`, JSON.stringify(stored));
-    setReplayPasswords(prev => ({ ...prev, [replayTarget.id]: pw }));
+    setReplayPasswords((prev) => ({ ...prev, [replayTarget.id]: result.replay_password }));
   };
 
   const filteredShows = shows.filter((s) => {
@@ -142,7 +195,8 @@ const ReplayPage = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredShows.map((show, i) => {
-              const hasPassword = !!replayPasswords[show.id];
+              const hasRealPassword = replayPasswords[show.id] && replayPasswords[show.id] !== "__purchased__";
+              const hasPurchased = !!replayPasswords[show.id];
               return (
                 <motion.div key={show.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.08 }}
                   className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5">
@@ -155,7 +209,9 @@ const ReplayPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                     {show.category && show.category !== "regular" && (() => {
                       const cat = SHOW_CATEGORIES[show.category] || SHOW_CATEGORIES.regular;
-                      return <span className={`absolute top-3 left-3 rounded-full px-3 py-1 text-[10px] font-bold backdrop-blur-sm ${cat.color}`}>{cat.label}</span>;
+                      const memberText = show.category_member && (show.category === "birthday" || show.category === "last_show")
+                        ? ` — ${show.category_member}` : "";
+                      return <span className={`absolute top-3 left-3 rounded-full px-3 py-1 text-[10px] font-bold backdrop-blur-sm ${cat.color}`}>{cat.label}{memberText}</span>;
                     })()}
                     <span className="absolute top-3 right-3 rounded-full bg-accent/80 px-2.5 py-1 text-[10px] font-bold text-accent-foreground backdrop-blur-sm">REPLAY</span>
                     <div className="absolute bottom-3 left-4 right-4"><h3 className="text-lg font-bold text-foreground">{show.title}</h3></div>
@@ -173,20 +229,43 @@ const ReplayPage = () => {
                       </div>
                     )}
                     <div className="flex items-center gap-1.5 text-sm text-primary"><Coins className="h-4 w-4" /><span className="font-semibold">{show.replay_coin_price} Koin</span></div>
-                    {hasPassword ? (
+
+                    {hasRealPassword ? (
                       <div className="space-y-2">
                         <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-center">
                           <p className="text-[10px] font-medium text-muted-foreground mb-1">🔐 Sandi Replay</p>
                           <p className="font-mono text-lg font-bold text-primary">{replayPasswords[show.id]}</p>
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(replayPasswords[show.id]); toast({ title: "Sandi disalin!" }); }}
-                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-semibold text-accent-foreground transition-all hover:bg-accent/90">
-                          <Copy className="h-4 w-4" /> Salin Sandi Replay
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(replayPasswords[show.id]);
+                            toast({ title: "Sandi disalin! Membuka halaman replay..." });
+                            setTimeout(() => {
+                              window.open("https://replaytime.lovable.app", "_blank");
+                            }, 500);
+                          }}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-semibold text-accent-foreground transition-all hover:bg-accent/90 active:scale-[0.97]"
+                        >
+                          <Copy className="h-4 w-4" /> Salin Sandi & Tonton Replay
                         </button>
                       </div>
+                    ) : hasPurchased ? (
+                      <a
+                        href="https://replaytime.lovable.app"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-semibold text-accent-foreground transition-all hover:bg-accent/90 active:scale-[0.97]"
+                      >
+                        <Play className="h-4 w-4" /> Tonton Replay
+                      </a>
                     ) : (
-                      <button onClick={() => { if (!coinUser) { toast({ title: "Login terlebih dahulu", variant: "destructive" }); return; } setReplayTarget(show); setReplayResult(null); }}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground transition-all hover:bg-primary/90">
+                      <button
+                        onClick={() => {
+                          if (!coinUser) { toast({ title: "Login terlebih dahulu", description: "Silakan login di /auth untuk membeli replay.", variant: "destructive" }); return; }
+                          setReplayTarget(show); setReplayResult(null);
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
+                      >
                         <Coins className="h-4 w-4" /> Beli Replay {show.replay_coin_price} Koin
                       </button>
                     )}
@@ -198,6 +277,7 @@ const ReplayPage = () => {
         )}
       </div>
 
+      {/* Replay Purchase Dialog */}
       <Dialog open={!!replayTarget} onOpenChange={() => { setReplayTarget(null); setReplayResult(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -207,28 +287,98 @@ const ReplayPage = () => {
           {!replayResult ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-secondary/50 p-4 space-y-2">
-                <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Harga</span><span className="font-bold text-primary">{replayTarget?.replay_coin_price} Koin</span></div>
-                <div className="flex items-center justify-between text-sm border-t border-border pt-2"><span className="text-muted-foreground">Saldo</span><span className={`font-bold ${coinBalance >= (replayTarget?.replay_coin_price || 0) ? "text-[hsl(var(--success))]" : "text-destructive"}`}>{coinBalance} Koin</span></div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Show</span>
+                  <span className="font-semibold text-foreground">{replayTarget?.title}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Tanggal</span>
+                  <span className="text-foreground">{replayTarget?.schedule_date}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Harga Replay</span>
+                  <span className="font-bold text-primary">{replayTarget?.replay_coin_price} Koin</span>
+                </div>
+                <div className="flex items-center justify-between text-sm border-t border-border pt-2">
+                  <span className="text-muted-foreground">Saldo Anda</span>
+                  <span className={`font-bold ${coinBalance >= (replayTarget?.replay_coin_price || 0) ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                    {coinBalance} Koin
+                  </span>
+                </div>
               </div>
               {coinBalance < (replayTarget?.replay_coin_price || 0) ? (
                 <div className="space-y-3">
                   <p className="text-center text-sm text-destructive">Koin tidak cukup.</p>
-                  <Button onClick={() => { setReplayTarget(null); window.location.href = "/coins"; }} className="w-full">Beli Koin</Button>
+                  <Button className="w-full" variant="outline" onClick={() => { setReplayTarget(null); window.location.href = "/coins"; }}>
+                    <Coins className="mr-2 h-4 w-4" /> Beli Koin
+                  </Button>
                 </div>
               ) : (
-                <Button className="w-full gap-2" onClick={handleReplayRedeem} disabled={redeeming}><Coins className="h-4 w-4" />{redeeming ? "Memproses..." : "Tukar Koin"}</Button>
+                <Button className="w-full gap-2" onClick={handleReplayRedeem} disabled={redeeming}>
+                  <Coins className="h-4 w-4" />
+                  {redeeming ? "Memproses..." : `Bayar ${replayTarget?.replay_coin_price} Koin`}
+                </Button>
               )}
             </div>
           ) : (
             <div className="space-y-4 text-center">
-              <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
-                <p className="text-xs text-muted-foreground mb-1">🔐 Sandi Replay</p>
-                <p className="font-mono text-2xl font-bold text-primary">{replayResult.replay_password || "—"}</p>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--success))]/20">
+                <Play className="h-6 w-6 text-[hsl(var(--success))]" />
               </div>
-              <p className="text-sm text-muted-foreground">Sisa saldo: {replayResult.remaining_balance} Koin</p>
-              <Button variant="outline" className="w-full" onClick={() => { navigator.clipboard.writeText(replayResult.replay_password); toast({ title: "Sandi disalin!" }); }}>
-                <Copy className="mr-2 h-4 w-4" /> Salin Sandi
+              <p className="font-semibold text-foreground">Pembelian Replay Berhasil!</p>
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">🔐 Sandi Replay Anda</p>
+                <p className="font-mono text-2xl font-bold text-primary">{replayResult.replay_password}</p>
+              </div>
+              <Button
+                className="w-full gap-2"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(replayResult.replay_password);
+                  toast({ title: "Sandi disalin! Membuka halaman replay..." });
+                  setTimeout(() => {
+                    window.open("https://replaytime.lovable.app", "_blank");
+                    setReplayTarget(null);
+                    setReplayResult(null);
+                  }, 500);
+                }}
+              >
+                <Copy className="h-4 w-4" /> Salin Sandi & Tonton Replay
               </Button>
+              <p className="text-xs text-muted-foreground">⚠️ Sandi akan disalin otomatis, lalu halaman replay terbuka</p>
+              <p className="text-xs text-muted-foreground">Sisa saldo: <span className="font-bold text-primary">{replayResult.remaining_balance} koin</span></p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Replay Password Modal */}
+      <Dialog open={!!replayModal} onOpenChange={() => setReplayModal(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Lock className="h-5 w-5 text-primary" /> Sandi Replay</DialogTitle>
+            <DialogDescription>Salin sandi ini sebelum menuju halaman replay</DialogDescription>
+          </DialogHeader>
+          {replayModal && (
+            <div className="space-y-4 text-center">
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">🔐 Sandi Replay</p>
+                <p className="font-mono text-2xl font-bold text-primary">{replayModal.password}</p>
+              </div>
+              <Button
+                className="w-full gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(replayModal.password);
+                  toast({ title: "Sandi disalin! Membuka halaman replay..." });
+                  setTimeout(() => {
+                    window.open("https://replaytime.lovable.app", "_blank");
+                    setReplayModal(null);
+                  }, 500);
+                }}
+              >
+                <Copy className="h-4 w-4" /> Salin Sandi & Tonton Replay
+              </Button>
+              <p className="text-xs text-muted-foreground">⚠️ Sandi akan disalin otomatis, lalu halaman replay terbuka</p>
             </div>
           )}
         </DialogContent>
