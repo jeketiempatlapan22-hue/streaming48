@@ -10,6 +10,7 @@ import ShowManager from "@/components/admin/ShowManager";
 import CoinPackageManager from "@/components/admin/CoinPackageManager";
 import CoinOrderManager from "@/components/admin/CoinOrderManager";
 import SiteSettingsManager from "@/components/admin/SiteSettingsManager";
+import AdminMonitor from "@/components/admin/AdminMonitor";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
@@ -48,7 +49,7 @@ const AdminDashboard = () => {
       case "shows": return <ShowManager />;
       case "coin-packages": return <CoinPackageManager />;
       case "coin-orders": return <CoinOrderManager />;
-      case "monitor": return <div className="text-muted-foreground text-center py-16">Monitor — Coming soon</div>;
+      case "monitor": return <AdminMonitor />;
       case "site": return <SiteSettingsManager />;
       default: return <LiveControl />;
     }
