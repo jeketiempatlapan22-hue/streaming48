@@ -494,7 +494,7 @@ const Index = () => {
             <span className="text-foreground">Real</span><span className="text-primary">Time48</span>
           </motion.h1>
           <motion.p
-            className="mx-auto mb-4 max-w-md text-muted-foreground md:text-lg"
+            className="mx-auto mb-3 max-w-md text-sm text-muted-foreground md:text-base"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }}
           >
             {settings.site_title}
