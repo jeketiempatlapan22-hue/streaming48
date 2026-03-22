@@ -50,6 +50,7 @@ const ReplayPage = () => {
   const [qrisStep, setQrisStep] = useState<"scan" | "upload" | "done">("scan");
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofUrl, setProofUrl] = useState("");
+  const [proofFilePath, setProofFilePath] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [loginPopup, setLoginPopup] = useState(false);
 
