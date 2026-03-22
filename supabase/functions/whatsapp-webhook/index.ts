@@ -740,31 +740,68 @@ async function handleShowInfo(supabase: any): Promise<string> {
   }
 }
 
-async function handleTokenCmd(supabase: any, tokenCode: string, action: 'block' | 'unblock' | 'reset' | 'delete'): Promise<string> {
+async function findTokenByInput(supabase: any, input: string): Promise<{ token: any | null; error: string | null; multiple: any[] | null }> {
+  // Try exact match first
+  const { data: exact } = await supabase.from('tokens').select('id, code, status').eq('code', input).maybeSingle();
+  if (exact) return { token: exact, error: null, multiple: null };
+
+  // Try 4-char suffix match (case-insensitive)
+  const suffix = input.toLowerCase();
+  const { data: all } = await supabase.from('tokens').select('id, code, status').eq('status', 'active').order('created_at', { ascending: false }).limit(500);
+  if (!all) return { token: null, error: 'Gagal mencari token.', multiple: null };
+
+  // Also search blocked tokens for unblock
+  const { data: allBlocked } = await supabase.from('tokens').select('id, code, status').eq('status', 'blocked').order('created_at', { ascending: false }).limit(500);
+  const combined = [...(all || []), ...(allBlocked || [])];
+
+  const matches = combined.filter((t: any) => t.code.toLowerCase().endsWith(suffix));
+  if (matches.length === 0) return { token: null, error: `Token dengan akhiran "${input}" tidak ditemukan.`, multiple: null };
+  if (matches.length === 1) return { token: matches[0], error: null, multiple: null };
+  return { token: null, error: null, multiple: matches };
+}
+
+async function handleTokenCmd(supabase: any, tokenInput: string, action: 'block' | 'unblock' | 'reset' | 'delete'): Promise<string> {
   try {
-    const { data: token } = await supabase.from('tokens').select('id, code, status').eq('code', tokenCode).maybeSingle();
-    if (!token) return `⚠️ Token "${tokenCode}" tidak ditemukan.`;
+    const { token, error, multiple } = await findTokenByInput(supabase, tokenInput);
+    if (error) return `⚠️ ${error}`;
+    if (multiple) {
+      const list = multiple.map((t: any) => `• ${t.code} [${t.status}]`).join('\n');
+      return `⚠️ Ditemukan ${multiple.length} token dengan akhiran "${tokenInput}":\n${list}\n\nGunakan kode lengkap untuk aksi.`;
+    }
 
     if (action === 'block') {
       await supabase.from('tokens').update({ status: 'blocked' }).eq('id', token.id);
       await supabase.from('token_sessions').update({ is_active: false }).eq('token_id', token.id);
-      return `🚫 Token ${tokenCode} telah *diblokir*! Semua sesi dimatikan.`;
+      return `🚫 Token ${token.code} telah *diblokir*! Semua sesi dimatikan.`;
     } else if (action === 'unblock') {
       await supabase.from('tokens').update({ status: 'active' }).eq('id', token.id);
-      return `✅ Token ${tokenCode} telah *dibuka blokirnya*.`;
+      return `✅ Token ${token.code} telah *dibuka blokirnya*.`;
     } else if (action === 'reset') {
       await supabase.from('token_sessions').delete().eq('token_id', token.id);
-      return `🔄 Semua sesi untuk token ${tokenCode} telah *direset*.`;
+      return `🔄 Semua sesi untuk token ${token.code} telah *direset*.`;
     } else if (action === 'delete') {
       await supabase.from('chat_messages').delete().eq('token_id', token.id);
       await supabase.from('token_sessions').delete().eq('token_id', token.id);
       await supabase.from('tokens').delete().eq('id', token.id);
-      return `🗑️ Token ${tokenCode} telah *dihapus* beserta semua sesi dan pesan chat.`;
+      return `🗑️ Token ${token.code} telah *dihapus* beserta semua sesi dan pesan chat.`;
     }
     return '⚠️ Aksi tidak dikenal.';
   } catch (e) {
     return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
   }
+}
+
+async function handleTokensList(supabase: any): Promise<string> {
+  const { data: tokens } = await supabase.from('tokens').select('code, status, expires_at, duration_type').order('created_at', { ascending: false }).limit(30);
+  if (!tokens || tokens.length === 0) return '📋 Tidak ada token.';
+  const now = new Date();
+  const lines = tokens.map((t: any) => {
+    const last4 = t.code.slice(-4);
+    const expired = t.expires_at && new Date(t.expires_at) < now;
+    const statusIcon = t.status === 'blocked' ? '🔴' : expired ? '🟡' : '🟢';
+    return `${statusIcon} ...${last4} [${t.status}] ${t.duration_type || ''}`;
+  });
+  return `🔑 *Daftar Token (${tokens.length}):*\n${lines.join('\n')}\n\n💡 Gunakan 4 digit belakang untuk aksi token.`;
 }
 
 function jsonResponse(body: unknown, status = 200) {
