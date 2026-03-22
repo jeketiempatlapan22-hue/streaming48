@@ -123,6 +123,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const unblocktokenMatch = rawText.match(/^\/unblocktoken\s+(\S+)$/i);
   const resettokenMatch = rawText.match(/^\/resettoken\s+(\S+)$/i);
   const deletetokenMatch = rawText.match(/^\/deletetoken\s+(\S+)$/i);
+  const tokensListMatch = /^\/tokens$/i.test(rawText);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
