@@ -119,6 +119,10 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
+  const blocktokenMatch = rawText.match(/^\/blocktoken\s+(\S+)$/i);
+  const unblocktokenMatch = rawText.match(/^\/unblocktoken\s+(\S+)$/i);
+  const resettokenMatch = rawText.match(/^\/resettoken\s+(\S+)$/i);
+  const deletetokenMatch = rawText.match(/^\/deletetoken\s+(\S+)$/i);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
@@ -135,6 +139,10 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (isSetOffline) return await handleSetOffline(supabase);
   if (isShowInfo) return await handleShowInfo(supabase);
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
+  if (blocktokenMatch) return await handleTokenCmd(supabase, blocktokenMatch[1], 'block');
+  if (unblocktokenMatch) return await handleTokenCmd(supabase, unblocktokenMatch[1], 'unblock');
+  if (resettokenMatch) return await handleTokenCmd(supabase, resettokenMatch[1], 'reset');
+  if (deletetokenMatch) return await handleTokenCmd(supabase, deletetokenMatch[1], 'delete');
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
