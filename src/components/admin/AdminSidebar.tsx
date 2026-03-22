@@ -12,6 +12,7 @@ interface AdminSidebarProps {
 
 const sections = [
   { id: "live", label: "Live & Playlist", icon: Radio },
+  { id: "analytics", label: "Analitik", icon: TrendingUp },
   { id: "tokens", label: "Token Factory", icon: Key },
   { id: "shows", label: "Show Manager", icon: Theater },
   { id: "orders", label: "Order Langganan", icon: ClipboardList },
