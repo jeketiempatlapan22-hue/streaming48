@@ -916,6 +916,18 @@ export type Database = {
         }
       }
       get_purchased_show_passwords: { Args: never; Returns: Json }
+      get_safe_playlists: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          type: string
+          url: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
