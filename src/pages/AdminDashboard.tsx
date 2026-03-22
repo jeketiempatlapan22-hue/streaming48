@@ -70,6 +70,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
+      <Suspense fallback={null}><AdminOrderNotifications /></Suspense>
       <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} onLogout={handleLogout} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-3 md:hidden">
