@@ -28,6 +28,10 @@ const LiveControl = () => {
   const [editType, setEditType] = useState("");
   const [editUrl, setEditUrl] = useState("");
 
+  // Active show selection
+  const [shows, setShows] = useState<any[]>([]);
+  const [activeShowId, setActiveShowId] = useState("");
+
   const fetchPlaylists = async () => {
     const { data } = await supabase.from("playlists").select("*").order("sort_order");
     setPlaylists(data || []);
@@ -35,9 +39,10 @@ const LiveControl = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [streamRes, settingsRes] = await Promise.all([
+      const [streamRes, settingsRes, showsRes] = await Promise.all([
         supabase.from("streams").select("*").limit(1).single(),
         supabase.from("site_settings").select("*"),
+        supabase.from("shows").select("id, title, is_active, is_replay, schedule_date").order("created_at", { ascending: false }),
       ]);
       if (streamRes.data) {
         setStream(streamRes.data);
@@ -45,10 +50,12 @@ const LiveControl = () => {
         setDescription(streamRes.data.description || "");
         setIsLive(streamRes.data.is_live);
       }
+      if (showsRes.data) setShows(showsRes.data);
       if (settingsRes.data) {
         settingsRes.data.forEach((s: any) => {
           if (s.key === "next_show_time") setNextShowTime(s.value);
           if (s.key === "player_animation") setPlayerAnimation(s.value as AnimationType);
+          if (s.key === "active_show_id") setActiveShowId(s.value);
         });
       }
     };
