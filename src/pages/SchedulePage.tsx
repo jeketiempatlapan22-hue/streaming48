@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 const SchedulePage = () => {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [settings, setSettings] = useState<{ whatsapp_number: string }>({ whatsapp_number: "" });
   const [coinUser, setCoinUser] = useState<any>(null);
   const [redeemedTokens, setRedeemedTokens] = useState<Record<string, string>>({});
