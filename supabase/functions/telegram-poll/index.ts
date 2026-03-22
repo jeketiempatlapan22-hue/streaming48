@@ -820,7 +820,76 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-async function handleShowInfoCommand(supabase: any, botToken: string, chatId: string) {
+async function handleMembersCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: orders } = await supabase
+      .from('subscription_orders')
+      .select('phone, email, show_id, created_at')
+      .eq('status', 'confirmed')
+      .order('created_at', { ascending: false });
+
+    if (!orders || orders.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '👥 Belum ada member langganan\\.');
+      return;
+    }
+
+    const { data: shows } = await supabase.from('shows').select('id, title').eq('is_subscription', true);
+    const showMap: Record<string, string> = {};
+    (shows || []).forEach((s: any) => { showMap[s.id] = s.title; });
+
+    const grouped: Record<string, any[]> = {};
+    for (const o of orders) {
+      const title = showMap[o.show_id] || 'Unknown';
+      if (!grouped[title]) grouped[title] = [];
+      grouped[title].push(o);
+    }
+
+    let msg = `👥 *DAFTAR MEMBER LANGGANAN \\(${orders.length}\\)*\n\n`;
+    for (const [title, members] of Object.entries(grouped)) {
+      msg += `🎬 *${escapeMarkdown(title)}* \\(${members.length}\\)\n`;
+      for (const m of members) {
+        msg += `  📞 ${escapeMarkdown(m.phone || '-')} \\| 📧 ${escapeMarkdown(m.email || '-')}\n`;
+      }
+      msg += '\n';
+    }
+    msg += `💡 Kirim pesan massal: \`/msgmembers <pesan>\``;
+    await sendTelegramMessage(botToken, chatId, msg);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleMsgMembersCommand(supabase: any, botToken: string, chatId: string, message: string) {
+  try {
+    const { data: orders } = await supabase
+      .from('subscription_orders')
+      .select('phone')
+      .eq('status', 'confirmed');
+
+    if (!orders || orders.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Tidak ada member untuk dikirimi pesan\\.');
+      return;
+    }
+
+    const phones = [...new Set(orders.map((o: any) => o.phone).filter(Boolean))];
+    if (phones.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Tidak ada nomor HP member yang tersedia\\.');
+      return;
+    }
+
+    let sent = 0;
+    for (const phone of phones) {
+      await sendFonnteWhatsApp(phone, message);
+      sent++;
+    }
+
+    await sendTelegramMessage(botToken, chatId, `✅ Pesan berhasil dikirim ke ${sent} member\\!`);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+
   try {
     const { data: stream } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
     const { data: settings } = await supabase.from('site_settings').select('key, value').in('key', ['active_show_id', 'next_show_time']);
