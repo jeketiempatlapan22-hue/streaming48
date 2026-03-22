@@ -133,6 +133,12 @@ const LivePage = () => {
 
   const isLive = stream?.is_live || false;
 
+  const { signedUrl, loading: signedLoading } = useSignedStreamUrl(
+    activePlaylist ? { id: activePlaylist.id, type: activePlaylist.type, url: activePlaylist.url } : null,
+    tokenCode
+  );
+
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
       <ConnectionStatus />
