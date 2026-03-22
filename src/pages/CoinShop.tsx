@@ -48,11 +48,21 @@ const CoinShop = () => {
     if (file.size > 5 * 1024 * 1024) { toast.error("Maksimal 5 MB"); return; }
 
     setUploading(true);
-    // For now, create coin order without file upload (simplified)
+    const ext = file.name.split(".").pop();
+    const fileName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from("coin-proofs").upload(fileName, file);
+    
+    let proofUrl: string | null = null;
+    if (!uploadErr) {
+      const { data: urlData } = supabase.storage.from("coin-proofs").getPublicUrl(fileName);
+      proofUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from("coin_orders").insert({
       user_id: user.id,
       package_id: selectedPkg.id,
       coin_amount: selectedPkg.coin_amount,
+      payment_proof_url: proofUrl,
       status: "pending",
     });
     if (error) {

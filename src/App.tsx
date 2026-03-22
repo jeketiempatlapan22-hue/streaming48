@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/live" element={<LivePage />} />
             <Route path="/coins" element={<CoinShop />} />
             <Route path="/schedule" element={<SchedulePage />} />
+            <Route path="/profile" element={<ViewerProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
