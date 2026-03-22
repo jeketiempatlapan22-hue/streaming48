@@ -142,6 +142,33 @@ export type Database = {
         }
         Relationships: []
       }
+      live_polls: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          is_active: boolean
+          options: Json
+          question: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          question: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          options?: Json
+          question?: string
+        }
+        Relationships: []
+      }
       playlists: {
         Row: {
           created_at: string
@@ -171,6 +198,38 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_index: number
+          poll_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_index: number
+          poll_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_index?: number
+          poll_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "live_polls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
