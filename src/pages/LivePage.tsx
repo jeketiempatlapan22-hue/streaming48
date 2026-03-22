@@ -180,20 +180,23 @@ const LivePage = () => {
 
   useEffect(() => {
     if (!tokenCode || !tokenData?.id) return;
-    const fp = getFingerprint();
+    const fpVal = getFingerprint();
+    let retries = 0;
     const interval = window.setInterval(() => {
       void (async () => {
         try {
           await supabase.rpc("create_token_session", {
             _token_code: tokenCode,
-            _fingerprint: fp,
+            _fingerprint: fpVal,
             _user_agent: navigator.userAgent,
           });
+          retries = 0;
         } catch {
-          // no-op heartbeat failure
+          retries++;
+          // Don't kick user on transient errors — allow up to 5 consecutive failures
         }
       })();
-    }, 45000);
+    }, 120000);
     return () => window.clearInterval(interval);
   }, [tokenCode, tokenData?.id, getFingerprint]);
 

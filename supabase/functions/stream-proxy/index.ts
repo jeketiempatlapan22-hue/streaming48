@@ -10,9 +10,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SIGNING_SECRET = SERVICE_ROLE_KEY;
 
-const PLAYLIST_TOKEN_TTL = 300;
-const SUB_PLAYLIST_TOKEN_TTL = 600;
-const YT_TOKEN_TTL = 600;
+const PLAYLIST_TOKEN_TTL = 7200;
+const SUB_PLAYLIST_TOKEN_TTL = 7200;
+const YT_TOKEN_TTL = 7200;
 
 // In-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();

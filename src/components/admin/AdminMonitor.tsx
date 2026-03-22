@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
 import LiveChat from "@/components/viewer/LiveChat";
 import ChatModeratorManager from "@/components/admin/ChatModeratorManager";
+import PollManager from "@/components/admin/PollManager";
+import LivePoll from "@/components/viewer/LivePoll";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -42,7 +44,6 @@ const AdminMonitor = () => {
     };
     fetchData();
 
-    // Realtime stream updates
     const ch = supabase.channel("monitor-stream-rt").on("postgres_changes", { event: "*", schema: "public", table: "streams" }, (p: any) => {
       if (p.new) setStream(p.new);
     }).subscribe();
@@ -88,7 +89,7 @@ const AdminMonitor = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-foreground">📺 Monitor</h2>
+      <h2 className="text-xl font-bold text-foreground">📺 Monitor & Poll</h2>
 
       {/* Reset Chat */}
       <AlertDialog>
@@ -154,6 +155,18 @@ const AdminMonitor = () => {
             onBlockUser={handleBlockUser}
             onToggleChatMod={handleToggleChatMod}
           />
+        </div>
+      </div>
+
+      {/* Live Poll Section */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PollManager />
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">Preview Poll (tampilan user)</h3>
+          <div className="rounded-xl border border-border bg-card p-2">
+            <LivePoll voterId="admin-preview" />
+            <p className="mt-2 text-center text-xs text-muted-foreground italic">Preview poll aktif saat ini</p>
+          </div>
         </div>
       </div>
 

@@ -42,6 +42,12 @@ const LivePoll = ({ voterId }: LivePollProps) => {
     if (voteData) processVotes(voteData);
   }, [processVotes]);
 
+  const pollIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    pollIdRef.current = poll?.id || null;
+  }, [poll?.id]);
+
   useEffect(() => {
     const fetchPoll = async () => {
       const { data } = await supabase
@@ -69,18 +75,19 @@ const LivePoll = ({ voterId }: LivePollProps) => {
             setTotalVotes(0);
             setMyVote(null);
             fetchVotes(p.id);
-          } else if (poll?.id === p.id) {
+          } else if (pollIdRef.current === p.id) {
             setPoll(null);
           }
         } else if (payload.eventType === "DELETE") {
-          if (poll?.id === payload.old?.id) setPoll(null);
+          if (pollIdRef.current === payload.old?.id) setPoll(null);
         }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "poll_votes" }, () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          if (poll?.id) fetchVotes(poll.id);
-        }, 500);
+          const currentPollId = pollIdRef.current;
+          if (currentPollId) fetchVotes(currentPollId);
+        }, 300);
       })
       .subscribe();
 
