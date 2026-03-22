@@ -114,6 +114,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
+  const resetMatch = text.match(/^RESET\s+(\S+)$/);
+  const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
