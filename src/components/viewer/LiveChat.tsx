@@ -193,12 +193,13 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
     lastSentRef.current = now;
     setSending(true);
     const insertData: any = { username, message: newMessage.trim(), token_id: tokenId || null };
+    if (currentUserId) insertData.user_id = currentUserId;
     if (isAdmin) insertData.is_admin = true;
     await supabase.from("chat_messages").insert(insertData);
     setNewMessage("");
     setSending(false);
     inputRef.current?.focus();
-  }, [newMessage, username, tokenId, isAdmin]);
+  }, [newMessage, username, tokenId, isAdmin, currentUserId]);
 
   const handlePin = useCallback(async (id: string) => {
     if (onPinMessage) { onPinMessage(id); return; }
