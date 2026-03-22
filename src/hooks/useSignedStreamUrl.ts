@@ -37,6 +37,7 @@ export function useSignedStreamUrl(
         body: {
           token_code: tokenCode,
           playlist_id: playlist.id,
+          fingerprint: fingerprint || undefined,
         },
       });
 
