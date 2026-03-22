@@ -168,10 +168,12 @@ const LivePage = () => {
     </div>
   );
 
-  const { signedUrl, loading: signedLoading } = useSignedStreamUrl(
+  const { signedUrl, loading: signedLoading, proxyType } = useSignedStreamUrl(
     activePlaylist ? { id: activePlaylist.id, type: activePlaylist.type, url: activePlaylist.url } : null,
     tokenCode
   );
+
+  const isYouTubeProxied = proxyType === "youtube_proxy";
 
 
   return (
@@ -192,13 +194,15 @@ const LivePage = () => {
           {isLive && activePlaylist ? (
             <div className="relative">
               {signedUrl ? (
-                <VideoPlayer url={signedUrl} type={activePlaylist.type as StreamType} />
+                <VideoPlayer url={signedUrl} type={isYouTubeProxied ? "youtube" : activePlaylist.type as StreamType} isProxied={!!proxyType} />
               ) : signedLoading ? (
                 <div className="flex aspect-video w-full items-center justify-center bg-card">
                   <p className="text-sm text-muted-foreground animate-pulse">Memuat stream...</p>
                 </div>
               ) : (
-                <VideoPlayer url={activePlaylist.url} type={activePlaylist.type as StreamType} />
+                <div className="flex aspect-video w-full items-center justify-center bg-card">
+                  <p className="text-sm text-destructive">Gagal memuat stream. Coba refresh.</p>
+                </div>
               )}
               {tokenData?.code && <Suspense fallback={null}><Watermark tokenCode={tokenData.code} /></Suspense>}
             </div>
