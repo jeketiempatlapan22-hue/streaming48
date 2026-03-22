@@ -8,6 +8,7 @@ import PipButton from "@/components/viewer/PipButton";
 import SecurityAlert from "@/components/viewer/SecurityAlert";
 import PlayerAnimations, { AnimationType } from "@/components/viewer/PlayerAnimations";
 import ViewerBroadcast from "@/components/viewer/ViewerBroadcast";
+import { useSignedStreamUrl } from "@/hooks/useSignedStreamUrl";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
