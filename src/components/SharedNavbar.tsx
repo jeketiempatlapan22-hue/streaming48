@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Shield, Coins, Menu, User, Home, Calendar, Film, Settings, Crown } from "lucide-react";
+import { Shield, Coins, Menu, User, Home, Calendar, Film, Settings, Crown, Info, MessageCircle, Download } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import {
@@ -38,8 +39,10 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
     { icon: <Coins className="h-5 w-5 text-[hsl(var(--warning))]" />, label: "Coin Shop", description: "Beli koin untuk akses show", href: "/coins" },
     { icon: <Crown className="h-5 w-5 text-yellow-500" />, label: "Membership", description: "Paket langganan eksklusif", href: "/membership" },
     { icon: <Film className="h-5 w-5 text-primary" />, label: "Replay Show", description: "Tonton ulang show lalu", href: "/replay" },
+    { icon: <Info className="h-5 w-5 text-primary" />, label: "Tentang", description: "Info lengkap platform", href: "/about" },
+    { icon: <MessageCircle className="h-5 w-5 text-primary" />, label: "FAQ", description: "Pertanyaan yang sering diajukan", href: "/faq" },
+    { icon: <Download className="h-5 w-5 text-primary" />, label: "Install App", description: "Pasang di HP kamu", href: "/install" },
     ...(coinUser ? [{ icon: <User className="h-5 w-5 text-primary" />, label: "Profil Saya", description: "Token, koin & pengaturan", href: "/profile" }] : []),
-    { icon: <Settings className="h-5 w-5 text-muted-foreground" />, label: "Admin", description: "Panel admin", href: "/admin" },
   ];
 
   return (
@@ -50,6 +53,7 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
           <span className="text-sm font-bold">Real<span className="text-primary">Time48</span></span>
         </a>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {showCoinBadge && coinUser && (
             <a href="/profile" className="flex items-center gap-1.5 rounded-lg bg-[hsl(var(--warning))]/10 px-3 py-1.5 hover:bg-[hsl(var(--warning))]/20 transition">
               <Coins className="h-4 w-4 text-[hsl(var(--warning))]" />

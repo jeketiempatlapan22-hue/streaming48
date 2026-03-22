@@ -7,6 +7,7 @@ import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 import PipButton from "@/components/viewer/PipButton";
 import SecurityAlert from "@/components/viewer/SecurityAlert";
 import PlayerAnimations, { AnimationType } from "@/components/viewer/PlayerAnimations";
+import ViewerBroadcast from "@/components/viewer/ViewerBroadcast";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
@@ -134,6 +135,7 @@ const LivePage = () => {
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
       <ConnectionStatus />
+      <ViewerBroadcast />
       <SecurityAlert />
       {playerAnimation !== "none" && <PlayerAnimations type={playerAnimation} backgroundOnly />}
       {showUsernameModal && <Suspense fallback={null}><UsernameModal onSubmit={handleUsernameSet} /></Suspense>}

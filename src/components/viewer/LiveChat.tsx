@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Pin, Trash2, ShieldBan, ShieldPlus, ShieldMinus, Users, Trophy } from "lucide-react";
 import ChatLeaderboard from "@/components/viewer/ChatLeaderboard";
+import EmojiReactions from "@/components/viewer/EmojiReactions";
 
 interface LiveChatProps {
   username: string;
@@ -261,6 +262,13 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
           </div>
         )}
       </div>
+
+      {/* Emoji Reactions */}
+      <EmojiReactions onSend={(emoji) => {
+        if (!username) return;
+        const msg = emoji;
+        supabase.from("chat_messages").insert({ username, message: msg, user_id: null, token_id: tokenId || null }).then(() => {});
+      }} />
 
       {/* Input */}
       <form onSubmit={sendMessage} className="flex items-center gap-2 border-t border-border bg-card p-3">
