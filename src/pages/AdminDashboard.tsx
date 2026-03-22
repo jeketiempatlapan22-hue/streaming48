@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { lazy, Suspense } from "react";
 
+const AdminDashboardStats = lazy(() => import("@/components/admin/AdminDashboardStats"));
 const LiveControl = lazy(() => import("@/components/admin/LiveControl"));
 const TokenFactory = lazy(() => import("@/components/admin/TokenFactory"));
 const ShowManager = lazy(() => import("@/components/admin/ShowManager"));
