@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, Coins, Menu, User, Home, Calendar, Film, Settings } from "lucide-react";
+import { Shield, Coins, Menu, User, Home, Calendar, Film, Settings, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
