@@ -50,6 +50,7 @@ const AdminDashboard = () => {
       case "shows": return <ShowManager />;
       case "coin-packages": return <CoinPackageManager />;
       case "coin-orders": return <CoinOrderManager />;
+      case "polls": return <PollManager />;
       case "monitor": return <AdminMonitor />;
       case "site": return <SiteSettingsManager />;
       default: return <LiveControl />;
