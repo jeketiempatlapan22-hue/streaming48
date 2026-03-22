@@ -207,8 +207,9 @@ const Index = () => {
   const handleConfirmRegular = () => {
     if (!selectedShow || !settings.whatsapp_number) return;
     const now = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
+    const proofText = proofUrl ? `\n📎 *Bukti Transfer:* ${proofUrl}` : "";
     const msg = encodeURIComponent(
-      `━━━━━━━━━━━━━━━━━━━━\n🎬 *PESANAN TIKET BARU*\n━━━━━━━━━━━━━━━━━━━━\n\n🎭 *Show:* ${selectedShow.title}\n💰 *Harga:* ${selectedShow.price}\n${selectedShow.schedule_date ? `📅 *Jadwal:* ${selectedShow.schedule_date} ${selectedShow.schedule_time}\n` : ""}${selectedShow.lineup ? `👥 *Lineup:* ${selectedShow.lineup}\n` : ""}\n📋 *DATA PEMBELI*\n📧 Email: ${email}\n🕐 Waktu Order: ${now}\n\n━━━━━━━━━━━━━━━━━━━━\n_Dikirim dari RealTime48_ ✨`
+      `━━━━━━━━━━━━━━━━━━━━\n🎬 *PESANAN TIKET BARU*\n━━━━━━━━━━━━━━━━━━━━\n\n🎭 *Show:* ${selectedShow.title}\n💰 *Harga:* ${selectedShow.price}\n${selectedShow.schedule_date ? `📅 *Jadwal:* ${selectedShow.schedule_date} ${selectedShow.schedule_time}\n` : ""}${selectedShow.lineup ? `👥 *Lineup:* ${selectedShow.lineup}\n` : ""}\n📋 *DATA PEMBELI*\n📧 Email: ${email}${proofText}\n🕐 Waktu Order: ${now}\n\n━━━━━━━━━━━━━━━━━━━━\n_Dikirim dari RealTime48_ ✨`
     );
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${msg}`, "_blank");
     setSelectedShow(null);
