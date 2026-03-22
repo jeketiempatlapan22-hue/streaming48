@@ -225,13 +225,14 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `👥 *User Management:*\n` +
     `\`/users\` \\- Daftar semua user\n\n` +
     `🎬 *Show Management:*\n` +
-    `\`/replay\` \\- Lihat daftar show \\+ ID\n` +
-    `\`/replay <nama/ID>\` \\- Toggle replay by nama atau \\#ID\n` +
-    `\`/setactive <ID>\` \\- Set show aktif by \\#ID\n\n` +
+    `\`/shows\` \\- Lihat semua show aktif \\+ ID\n` +
+    `\`/replay\` \\- Lihat daftar show replay\n` +
+    `\`/replay #ID\` \\- Toggle replay by ID\n` +
+    `\`/setactive #ID\` \\- Set show aktif by ID\n\n` +
     `📡 *Live Stream:*\n` +
     `\`/showinfo\` \\- Info stream \\& show aktif saat ini\n` +
     `\`/setlive\` \\- Set stream jadi LIVE\n` +
-    `\`/setlive <nama/ID>\` \\- Set LIVE \\+ pilih show aktif\n` +
+    `\`/setlive #ID\` \\- Set LIVE \\+ pilih show aktif\n` +
     `\`/setoffline\` \\- Set semua stream jadi OFFLINE\n\n` +
     `🔑 *Password Reset:*\n` +
     `\`RESET <id>\` \\- Setujui reset password\n` +
@@ -241,8 +242,36 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini\n\n` +
-    `💡 _ID show bisa dilihat di Admin Panel Show Manager \\(\\#6 digit\\)_`;
+    `💡 _Gunakan \\#ID \\(6 digit hex\\) untuk semua aksi show\\. Lihat ID dengan /shows_`;
   await sendTelegramMessage(botToken, chatId, msg);
+}
+
+async function handleShowsCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: shows } = await supabase
+      .from('shows')
+      .select('id, title, schedule_date, schedule_time, is_replay, is_active, coin_price, replay_coin_price')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (!shows || shows.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '🎬 Tidak ada show aktif\\.');
+      return;
+    }
+
+    let message = `🎬 *DAFTAR SHOW AKTIF \\(${shows.length}\\)*\n\n`;
+    for (const s of shows) {
+      const sid = showShortId(s.id);
+      const replay = s.is_replay ? ' 🔁 REPLAY' : '';
+      const schedule = s.schedule_date ? `📅 ${escapeMarkdown(s.schedule_date)} ${escapeMarkdown(s.schedule_time || '')}` : '📅 \\-';
+      message += `\`#${sid}\` *${escapeMarkdown(s.title)}*${replay}\n   ${schedule} \\| 🪙 ${s.coin_price}/${s.replay_coin_price}\n\n`;
+    }
+    message += `💡 Gunakan ID untuk aksi:\n\`/setlive #ID\` \\| \`/replay #ID\` \\| \`/setactive #ID\``;
+    await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
 }
 
 async function handleDeductCoinCommand(supabase: any, botToken: string, chatId: string, username: string, amount: number, reason: string | null) {
