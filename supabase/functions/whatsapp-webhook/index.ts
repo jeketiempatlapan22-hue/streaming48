@@ -737,6 +737,33 @@ async function handleShowInfo(supabase: any): Promise<string> {
   }
 }
 
+async function handleTokenCmd(supabase: any, tokenCode: string, action: 'block' | 'unblock' | 'reset' | 'delete'): Promise<string> {
+  try {
+    const { data: token } = await supabase.from('tokens').select('id, code, status').eq('code', tokenCode).maybeSingle();
+    if (!token) return `⚠️ Token "${tokenCode}" tidak ditemukan.`;
+
+    if (action === 'block') {
+      await supabase.from('tokens').update({ status: 'blocked' }).eq('id', token.id);
+      await supabase.from('token_sessions').update({ is_active: false }).eq('token_id', token.id);
+      return `🚫 Token ${tokenCode} telah *diblokir*! Semua sesi dimatikan.`;
+    } else if (action === 'unblock') {
+      await supabase.from('tokens').update({ status: 'active' }).eq('id', token.id);
+      return `✅ Token ${tokenCode} telah *dibuka blokirnya*.`;
+    } else if (action === 'reset') {
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      return `🔄 Semua sesi untuk token ${tokenCode} telah *direset*.`;
+    } else if (action === 'delete') {
+      await supabase.from('chat_messages').delete().eq('token_id', token.id);
+      await supabase.from('token_sessions').delete().eq('token_id', token.id);
+      await supabase.from('tokens').delete().eq('id', token.id);
+      return `🗑️ Token ${tokenCode} telah *dihapus* beserta semua sesi dan pesan chat.`;
+    }
+    return '⚠️ Aksi tidak dikenal.';
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
