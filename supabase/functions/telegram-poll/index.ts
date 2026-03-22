@@ -144,6 +144,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
+  } else if (isShows) {
+    await handleShowsCommand(supabase, botToken, chatId);
   } else if (isStatus) {
     await handleStatusCommand(supabase, botToken, chatId);
   } else if (addCoinMatch) {
@@ -157,13 +159,13 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   } else if (broadcastMatch) {
     await handleBroadcastCommand(supabase, botToken, chatId, broadcastMatch[1].trim());
   } else if (replayMatch) {
-    await handleReplayToggle(supabase, botToken, chatId, replayMatch[1].trim());
+    await handleReplayToggle(supabase, botToken, chatId, `#${replayMatch[1]}`);
   } else if (isReplayList) {
     await handleReplayList(supabase, botToken, chatId);
   } else if (setactiveMatch) {
-    await handleSetActiveCommand(supabase, botToken, chatId, setactiveMatch[1].trim());
+    await handleSetActiveCommand(supabase, botToken, chatId, `#${setactiveMatch[1]}`);
   } else if (setliveMatch) {
-    await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1]?.trim() || null);
+    await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1] ? `#${setliveMatch[1]}` : null);
   } else if (isSetOffline) {
     await handleSetOfflineCommand(supabase, botToken, chatId);
   } else if (isShowInfo) {
