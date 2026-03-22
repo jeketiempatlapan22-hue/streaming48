@@ -158,6 +158,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1]?.trim() || null);
   } else if (isSetOffline) {
     await handleSetOfflineCommand(supabase, botToken, chatId);
+  } else if (msgshowMatch) {
+    await handleMsgShowCommand(supabase, botToken, chatId, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
