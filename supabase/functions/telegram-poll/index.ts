@@ -120,21 +120,94 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const addCoinMatch = rawText.match(/^\/addcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
   const balanceMatch = rawText.match(/^\/balance\s+(\S+)$/i);
   const isUsers = /^\/users$/i.test(rawText);
+  const isHelp = /^\/(help|start)$/i.test(rawText);
+  const deductCoinMatch = rawText.match(/^\/deductcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
+  const broadcastMatch = rawText.match(/^\/broadcast\s+(.+)$/is);
 
-  if (isStatus) {
+  if (isHelp) {
+    await handleHelpCommand(botToken, chatId);
+  } else if (isStatus) {
     await handleStatusCommand(supabase, botToken, chatId);
   } else if (addCoinMatch) {
     await handleAddCoinCommand(supabase, botToken, chatId, addCoinMatch[1], parseInt(addCoinMatch[2], 10), addCoinMatch[3] || null);
+  } else if (deductCoinMatch) {
+    await handleDeductCoinCommand(supabase, botToken, chatId, deductCoinMatch[1], parseInt(deductCoinMatch[2], 10), deductCoinMatch[3] || null);
   } else if (balanceMatch) {
     await handleBalanceCommand(supabase, botToken, chatId, balanceMatch[1]);
   } else if (isUsers) {
     await handleUsersCommand(supabase, botToken, chatId);
+  } else if (broadcastMatch) {
+    await handleBroadcastCommand(supabase, botToken, chatId, broadcastMatch[1].trim());
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
   } else if (tidakMatch) {
     const ids = tidakMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'reject');
+  }
+}
+
+async function handleHelpCommand(botToken: string, chatId: string) {
+  const msg = `🤖 *REALTIME48 BOT \\- DAFTAR COMMAND*\n\n` +
+    `📋 *Order Management:*\n` +
+    `\`/status\` \\- Cek order pending\n` +
+    `\`YA <id>\` \\- Konfirmasi order\n` +
+    `\`YA id1,id2,id3\` \\- Bulk konfirmasi\n` +
+    `\`TIDAK <id>\` \\- Tolak order\n\n` +
+    `💰 *Koin Management:*\n` +
+    `\`/addcoin <user> <jumlah>\` \\- Tambah koin\n` +
+    `\`/addcoin <user> <jumlah> <alasan>\` \\- Tambah koin \\+ alasan\n` +
+    `\`/deductcoin <user> <jumlah>\` \\- Kurangi koin\n` +
+    `\`/balance <user>\` \\- Cek saldo user\n\n` +
+    `👥 *User Management:*\n` +
+    `\`/users\` \\- Daftar semua user\n\n` +
+    `📢 *Lainnya:*\n` +
+    `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
+    `\`/help\` \\- Tampilkan daftar command ini`;
+  await sendTelegramMessage(botToken, chatId, msg);
+}
+
+async function handleDeductCoinCommand(supabase: any, botToken: string, chatId: string, username: string, amount: number, reason: string | null) {
+  try {
+    if (amount <= 0 || amount > 100000) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Jumlah koin harus antara 1\\-100\\.000');
+      return;
+    }
+    const { data: profile } = await supabase.from('profiles').select('id, username').ilike('username', username).maybeSingle();
+    if (!profile) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ User "${escapeMarkdown(username)}" tidak ditemukan\\.`);
+      return;
+    }
+    const { data: existing } = await supabase.from('coin_balances').select('balance').eq('user_id', profile.id).maybeSingle();
+    const currentBal = existing?.balance ?? 0;
+    if (currentBal < amount) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ Saldo ${escapeMarkdown(profile.username)} hanya ${currentBal} koin\\. Tidak cukup untuk dikurangi ${amount}\\.`);
+      return;
+    }
+    const newBalance = currentBal - amount;
+    await supabase.from('coin_balances').update({ balance: newBalance, updated_at: new Date().toISOString() }).eq('user_id', profile.id);
+    await supabase.from('coin_transactions').insert({
+      user_id: profile.id, amount: -amount, type: 'admin_deduct',
+      description: reason || 'Koin dikurangi oleh admin via Telegram',
+    });
+    await sendTelegramMessage(botToken, chatId,
+      `✅ *Koin Dikurangi\\!*\n\n👤 User: ${escapeMarkdown(profile.username)}\n💸 \\-${amount} koin\n🏦 Saldo baru: ${newBalance}${reason ? `\n📝 Alasan: ${escapeMarkdown(reason)}` : ''}`
+    );
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleBroadcastCommand(supabase: any, botToken: string, chatId: string, message: string) {
+  try {
+    await supabase.from('admin_notifications').insert({
+      title: '📢 Broadcast Admin',
+      message: message,
+      type: 'broadcast',
+    });
+    await sendTelegramMessage(botToken, chatId, `✅ Broadcast terkirim\\!\n\n📝 Pesan: ${escapeMarkdown(message)}`);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error broadcast: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
   }
 }
 
@@ -195,7 +268,7 @@ async function handleStatusCommand(supabase: any, botToken: string, chatId: stri
       message += `\n💡 Konfirmasi semua: \`YA ${allIds.join(',')}\`\n`;
     } else { message += '🎬 *Subscription:* Tidak ada order pending\n'; }
 
-    message += '\n📌 *Commands:*\n`YA <id>` \\- Konfirmasi order\n`YA id1,id2,id3` \\- Bulk konfirmasi\n`TIDAK <id>` \\- Tolak order\n`/addcoin <username> <jumlah>` \\- Tambah koin\n`/balance <username>` \\- Cek saldo user\n`/users` \\- Daftar semua user\n`/status` \\- Cek order pending';
+    message += '\n📌 Ketik `/help` untuk daftar semua command';
     await sendTelegramMessage(botToken, chatId, message);
   } catch { await sendTelegramMessage(botToken, chatId, '⚠️ Error mengambil data status'); }
 }

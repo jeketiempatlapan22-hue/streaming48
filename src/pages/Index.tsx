@@ -275,8 +275,8 @@ const Index = () => {
       <nav className="fixed top-0 left-0 right-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shadow-[0_0_8px_hsl(var(--primary)/0.3)]">
-              <img src={logo} alt="RT48" className="h-4 w-4 rounded-full object-cover" />
+            <div className="h-9 w-9 rounded-full border border-border/60 overflow-hidden shadow-sm">
+              <img src={logo} alt="RT48" className="h-full w-full object-cover" />
             </div>
             <span className="text-sm font-bold text-foreground">Real<span className="text-primary">Time48</span></span>
           </div>
@@ -298,8 +298,8 @@ const Index = () => {
               <SheetContent side="right" className="w-80 border-border bg-card">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2 text-foreground">
-                    <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                      <img src={logo} alt="RT48" className="h-3 w-3 rounded-full object-cover" />
+                    <div className="h-7 w-7 rounded-full border border-border/60 overflow-hidden">
+                      <img src={logo} alt="RT48" className="h-full w-full object-cover" />
                     </div>
                     RealTime48
                   </SheetTitle>
