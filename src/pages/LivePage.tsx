@@ -78,6 +78,7 @@ const LivePage = () => {
   const [playerAnimation, setPlayerAnimation] = useState<AnimationType>("none");
   const [showMismatch, setShowMismatch] = useState(false);
   const [mismatchShowTitle, setMismatchShowTitle] = useState("");
+  const [showReplayBlocked, setShowReplayBlocked] = useState(false);
   const playerRef = useRef<VideoPlayerHandle>(null);
 
   // IMPORTANT: All hooks must be called before any conditional returns
