@@ -166,6 +166,7 @@ TIDAK <id> - Tolak order
 
 👥 *User Management:*
 /users - Daftar semua user
+/members - Daftar member langganan
 
 🎬 *Show Management:*
 /replay - Lihat daftar show replay
@@ -182,6 +183,7 @@ TOLAK_RESET <id> - Tolak reset password
 
 📨 *Messaging:*
 /msgshow <nama show> | <pesan> - Kirim WA ke semua pemesan show
+/msgmembers <pesan> - Kirim WA ke semua member
 
 📢 *Lainnya:*
 /broadcast <pesan> - Kirim notifikasi
