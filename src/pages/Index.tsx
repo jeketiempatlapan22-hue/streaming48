@@ -223,9 +223,9 @@ const Index = () => {
     try {
       const ext = file.name.split(".").pop();
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("coin-proofs").upload(path, file);
+      const { error } = await supabase.storage.from("payment-proofs").upload(path, file);
       if (error) throw error;
-      const { data: urlData } = await supabase.storage.from("coin-proofs").createSignedUrl(path, 86400);
+      const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 86400);
       setProofUrl(urlData?.signedUrl || "");
       if (selectedShow.is_subscription) setPurchaseStep("info");
     } catch {
