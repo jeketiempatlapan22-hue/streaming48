@@ -12,10 +12,7 @@ import { useSignedStreamUrl } from "@/hooks/useSignedStreamUrl";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
-const Watermark = lazy(() => import("@/components/viewer/Watermark"));
 const LivePoll = lazy(() => import("@/components/viewer/LivePoll"));
-
-type StreamType = "m3u8" | "cloudflare" | "youtube";
 
 const LivePage = () => {
   const [searchParams] = useSearchParams();
@@ -173,8 +170,8 @@ const LivePage = () => {
     tokenCode
   );
 
-  const isYouTubeProxied = proxyType === "youtube_proxy";
-
+  // Determine the effective playlist type for the player
+  const effectiveType = proxyType === "youtube_proxy" ? "youtube" : (activePlaylist?.type || "m3u8");
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
@@ -194,7 +191,11 @@ const LivePage = () => {
           {isLive && activePlaylist ? (
             <div className="relative">
               {signedUrl ? (
-                <VideoPlayer url={signedUrl} type={isYouTubeProxied ? "youtube" : activePlaylist.type as StreamType} isProxied={!!proxyType} />
+                <VideoPlayer
+                  playlist={{ url: signedUrl, type: effectiveType, label: activePlaylist.title }}
+                  autoPlay
+                  tokenCode={tokenData?.code}
+                />
               ) : signedLoading ? (
                 <div className="flex aspect-video w-full items-center justify-center bg-card">
                   <p className="text-sm text-muted-foreground animate-pulse">Memuat stream...</p>
@@ -204,7 +205,6 @@ const LivePage = () => {
                   <p className="text-sm text-destructive">Gagal memuat stream. Coba refresh.</p>
                 </div>
               )}
-              {tokenData?.code && <Suspense fallback={null}><Watermark tokenCode={tokenData.code} /></Suspense>}
             </div>
           ) : (
             <div className="relative flex aspect-video w-full flex-col items-center justify-center bg-card">

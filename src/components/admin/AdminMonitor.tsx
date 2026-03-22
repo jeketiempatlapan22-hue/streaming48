@@ -117,7 +117,7 @@ const AdminMonitor = () => {
         <div className="space-y-2">
           <div className="rounded-xl border border-border overflow-hidden">
             {activePlaylist ? (
-              <VideoPlayer url={activePlaylist.url} type={activePlaylist.type} />
+              <VideoPlayer playlist={{ url: activePlaylist.url, type: activePlaylist.type, label: activePlaylist.title }} autoPlay={false} />
             ) : (
               <div className="flex aspect-video items-center justify-center bg-card">
                 <p className="text-sm text-muted-foreground">Tidak ada sumber video</p>
