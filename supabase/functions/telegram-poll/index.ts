@@ -118,11 +118,17 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const tidakMatch = text.match(/^TIDAK\s+(.+)$/);
   const isStatus = rawText === '/status' || text === '/STATUS';
   const addCoinMatch = rawText.match(/^\/addcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
+  const balanceMatch = rawText.match(/^\/balance\s+(\S+)$/i);
+  const isUsers = /^\/users$/i.test(rawText);
 
   if (isStatus) {
     await handleStatusCommand(supabase, botToken, chatId);
   } else if (addCoinMatch) {
     await handleAddCoinCommand(supabase, botToken, chatId, addCoinMatch[1], parseInt(addCoinMatch[2], 10), addCoinMatch[3] || null);
+  } else if (balanceMatch) {
+    await handleBalanceCommand(supabase, botToken, chatId, balanceMatch[1]);
+  } else if (isUsers) {
+    await handleUsersCommand(supabase, botToken, chatId);
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
@@ -189,7 +195,7 @@ async function handleStatusCommand(supabase: any, botToken: string, chatId: stri
       message += `\n💡 Konfirmasi semua: \`YA ${allIds.join(',')}\`\n`;
     } else { message += '🎬 *Subscription:* Tidak ada order pending\n'; }
 
-    message += '\n📌 *Commands:*\n`YA <id>` \\- Konfirmasi order\n`YA id1,id2,id3` \\- Bulk konfirmasi\n`TIDAK <id>` \\- Tolak order\n`/addcoin <username> <jumlah>` \\- Tambah koin\n`/status` \\- Cek order pending';
+    message += '\n📌 *Commands:*\n`YA <id>` \\- Konfirmasi order\n`YA id1,id2,id3` \\- Bulk konfirmasi\n`TIDAK <id>` \\- Tolak order\n`/addcoin <username> <jumlah>` \\- Tambah koin\n`/balance <username>` \\- Cek saldo user\n`/users` \\- Daftar semua user\n`/status` \\- Cek order pending';
     await sendTelegramMessage(botToken, chatId, message);
   } catch { await sendTelegramMessage(botToken, chatId, '⚠️ Error mengambil data status'); }
 }
@@ -293,7 +299,71 @@ async function handleAddCoinCommand(supabase: any, botToken: string, chatId: str
   }
 }
 
-function escapeMarkdown(text: string): string {
+async function handleBalanceCommand(supabase: any, botToken: string, chatId: string, username: string) {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .ilike('username', username)
+      .maybeSingle();
+
+    if (!profile) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ User "${escapeMarkdown(username)}" tidak ditemukan\\.`);
+      return;
+    }
+
+    const { data: balData } = await supabase
+      .from('coin_balances')
+      .select('balance')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+
+    const balance = balData?.balance ?? 0;
+
+    await sendTelegramMessage(botToken, chatId,
+      `💰 *Saldo Koin*\n\n👤 User: ${escapeMarkdown(profile.username)}\n🪙 Saldo: *${balance}* koin`
+    );
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleUsersCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!profiles || profiles.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '📋 Belum ada user terdaftar\\.');
+      return;
+    }
+
+    let message = `👥 *DAFTAR USER \\(${profiles.length}\\)*\n\n`;
+
+    for (const p of profiles) {
+      const { data: balData } = await supabase
+        .from('coin_balances')
+        .select('balance')
+        .eq('user_id', p.id)
+        .maybeSingle();
+
+      const bal = balData?.balance ?? 0;
+      const date = new Date(p.created_at).toLocaleDateString('id-ID');
+      message += `• ${escapeMarkdown(p.username || 'No Name')} \\- 🪙 ${bal} koin \\| 📅 ${escapeMarkdown(date)}\n`;
+    }
+
+    message += `\n💡 Cek saldo: \`/balance <username>\`\nTambah koin: \`/addcoin <username> <jumlah>\``;
+
+    await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+
   return String(text || '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
