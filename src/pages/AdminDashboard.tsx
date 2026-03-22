@@ -14,7 +14,7 @@ const CoinPackageManager = lazy(() => import("@/components/admin/CoinPackageMana
 const CoinOrderManager = lazy(() => import("@/components/admin/CoinOrderManager"));
 const SiteSettingsManager = lazy(() => import("@/components/admin/SiteSettingsManager"));
 const AdminMonitor = lazy(() => import("@/components/admin/AdminMonitor"));
-const PollManager = lazy(() => import("@/components/admin/PollManager"));
+
 const SubscriptionOrderManager = lazy(() => import("@/components/admin/SubscriptionOrderManager"));
 const SecurityLogManager = lazy(() => import("@/components/admin/SecurityLogManager"));
 const SystemHealthCheck = lazy(() => import("@/components/admin/SystemHealthCheck"));
