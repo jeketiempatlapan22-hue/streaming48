@@ -182,9 +182,25 @@ const ReplayPage = () => {
           <p className="mt-2 text-sm text-muted-foreground">Tonton ulang show yang sudah berlangsung</p>
         </motion.div>
 
-        <div className="relative mx-auto mb-8 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama show atau tanggal..." className="bg-card pl-10" />
+        <div className="mx-auto mb-6 max-w-2xl space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari nama show, member, tanggal..." className="bg-card pl-10" />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {availableCategories.map((cat) => {
+              const catInfo = cat === "all" ? { label: "📋 Semua", color: "bg-secondary text-secondary-foreground" } : (SHOW_CATEGORIES[cat] || { label: cat, color: "bg-secondary text-secondary-foreground" });
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-[0.95] ${categoryFilter === cat ? "ring-2 ring-primary ring-offset-2 ring-offset-background " + catInfo.color : "bg-secondary/50 text-muted-foreground hover:bg-secondary"}`}
+                >
+                  {catInfo.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {coinUser && (
