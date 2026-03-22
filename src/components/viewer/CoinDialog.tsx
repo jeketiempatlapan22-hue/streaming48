@@ -65,7 +65,7 @@ const CoinDialog = ({ show, coinBalance, coinRedeeming, coinResult, onClose, onR
             ) : (
               <Button className="w-full gap-2" onClick={onRedeem} disabled={coinRedeeming}>
                 <Coins className="h-4 w-4" />
-                {coinRedeeming ? "Memproses..." : `Bayar ${show?.coin_price} Koin`}
+                {coinRedeeming ? "Memproses..." : `Bayar ${effectivePrice} Koin`}
               </Button>
             )}
           </div>
