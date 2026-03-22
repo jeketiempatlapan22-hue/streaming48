@@ -22,7 +22,7 @@ const AboutPage = () => {
       }
       setStats({
         users: usersRes.count || 0,
-        shows: showsRes.count || 0,
+        shows: showsRes.data?.length || 0,
       });
     });
   }, []);
