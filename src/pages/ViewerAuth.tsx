@@ -1,176 +1,81 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Eye, EyeOff, User, Mail, Lock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { Coins, Mail, Lock, ArrowLeft, Phone, User, Shield } from "lucide-react";
+
+type AuthMethod = "phone" | "email";
 
 const ViewerAuth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [method, setMethod] = useState<AuthMethod>("phone");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) navigate("/coins");
+    });
+  }, [navigate]);
+
+  const normalizePhone = (raw: string) => raw.replace(/[^0-9]/g, "");
+  const deriveEmail = (phoneNum: string) => `${normalizePhone(phoneNum)}@rt48.user`;
+  const getAuthEmail = () => method === "email" ? email.trim() : deriveEmail(phone);
+  const isFormValid = () => {
+    if (mode === "signup" && !username.trim()) return false;
+    if (method === "phone") return normalizePhone(phone).length >= 10 && password.length >= 6;
+    return email.trim().includes("@") && password.length >= 6;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
+    if (!isFormValid()) return;
     setLoading(true);
-
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        toast.error("Login gagal: " + error.message);
-      } else {
-        toast.success("Berhasil login!");
-        navigate("/");
-      }
+    const authEmail = getAuthEmail();
+    if (mode === "signup") {
+      const { error } = await supabase.auth.signUp({ email: authEmail, password, options: { data: { username: username.trim() } } });
+      if (error) toast.error(error.message.includes("already registered") ? "Sudah terdaftar." : error.message);
+      else { toast.success("Berhasil!"); navigate("/coins"); }
     } else {
-      if (!username.trim()) {
-        toast.error("Username harus diisi");
-        setLoading(false);
-        return;
-      }
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { username: username.trim() },
-          emailRedirectTo: window.location.origin,
-        },
-      });
-      if (error) {
-        toast.error("Registrasi gagal: " + error.message);
-      } else {
-        toast.success("Berhasil daftar! Cek email untuk verifikasi.");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
+      if (error) toast.error("Nomor/email atau password salah.");
+      else navigate("/coins");
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <motion.div
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="w-16 h-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center mx-auto mb-4 shadow-[0_0_16px_hsl(var(--primary)/0.3)]">
-            <Shield className="w-7 h-7 text-primary" />
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.4)]">
+            <Shield className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight" style={{ lineHeight: "1.1" }}>
-            Real<span className="text-primary">Time48</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-2">
-            {isLogin ? "Masuk ke akunmu" : "Daftar akun baru"}
-          </p>
-        </motion.div>
-
-        {/* Tab */}
-        <motion.div
-          className="flex gap-1 bg-muted rounded-lg p-1 mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <button
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${isLogin ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${!isLogin ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Daftar
-          </button>
-        </motion.div>
-
-        <motion.form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-        >
-          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-xl shadow-black/20">
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-primary" /> Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Nama tampilan"
-                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-shadow"
-                  required={!isLogin}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-primary" /> Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@contoh.com"
-                className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-shadow"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-primary" /> Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-muted border border-border rounded-lg px-4 py-3 pr-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-shadow"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-            >
-              <User className="w-4 h-4" />
-              {loading ? "Memproses..." : isLogin ? "Masuk" : "Daftar"}
-            </button>
+          <h1 className="text-2xl font-bold text-foreground">Real<span className="text-primary">Time48</span></h1>
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Coins className="h-4 w-4 text-[hsl(var(--warning))]" /><span>Coin Shop</span>
           </div>
-        </motion.form>
-
-        <motion.p
-          className="text-center text-xs text-muted-foreground mt-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          <a href="/" className="text-primary hover:underline">← Kembali ke beranda</a>
-        </motion.p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-center text-lg font-semibold text-foreground">{mode === "login" ? "Masuk ke Akun" : "Buat Akun Baru"}</h2>
+          <div className="flex rounded-lg bg-secondary p-1">
+            <button type="button" onClick={() => setMethod("phone")} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${method === "phone" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Phone className="h-3.5 w-3.5" /> No. HP</button>
+            <button type="button" onClick={() => setMethod("email")} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${method === "email" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Mail className="h-3.5 w-3.5" /> Email</button>
+          </div>
+          {mode === "signup" && <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Username</label><div className="relative"><User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="NamaKamu" required maxLength={30} className="bg-background pl-10" /></div></div>}
+          {method === "phone" && <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Nomor HP</label><div className="relative"><Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" required className="bg-background pl-10" /></div></div>}
+          {method === "email" && <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label><div className="relative"><Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" required className="bg-background pl-10" /></div></div>}
+          <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 karakter" required minLength={6} className="bg-background pl-10" /></div></div>
+          <Button type="submit" className="w-full" disabled={loading || !isFormValid()}>{loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}</Button>
+          <p className="text-center text-xs text-muted-foreground">{mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}<button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")} className="ml-1 font-medium text-primary hover:underline">{mode === "login" ? "Daftar" : "Masuk"}</button></p>
+        </form>
+        <button onClick={() => navigate("/")} className="mt-4 flex w-full items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Kembali ke Beranda</button>
       </div>
     </div>
   );
