@@ -180,17 +180,27 @@ const LivePage = () => {
   }, [tokenCode, getFingerprint]);
 
   useEffect(() => {
-    if (!tokenCode || !tokenData?.id) return;
+    if (!tokenCode || !tokenData?.id || blocked) return;
     const fpVal = getFingerprint();
     let retries = 0;
     const interval = window.setInterval(() => {
       void (async () => {
         try {
-          await supabase.rpc("create_token_session", {
+          const { data } = await supabase.rpc("create_token_session", {
             _token_code: tokenCode,
             _fingerprint: fpVal,
             _user_agent: navigator.userAgent,
           });
+          const result = data as any;
+          if (!result?.success) {
+            const errorText = String(result?.error || "").toLowerCase();
+            if (errorText.includes("token") || errorText.includes("diblokir")) {
+              setBlocked(true);
+              return;
+            }
+            retries++;
+            return;
+          }
           retries = 0;
         } catch {
           retries++;
@@ -199,7 +209,7 @@ const LivePage = () => {
       })();
     }, 120000);
     return () => window.clearInterval(interval);
-  }, [tokenCode, tokenData?.id, getFingerprint]);
+  }, [tokenCode, tokenData?.id, getFingerprint, blocked]);
 
   useEffect(() => {
     const ch = supabase.channel("stream-rt").on("postgres_changes", { event: "*", schema: "public", table: "streams" }, (p: any) => { if (p.new) setStream(p.new); }).subscribe();
@@ -228,10 +238,27 @@ const LivePage = () => {
   }, [tokenData?.show_id]);
 
   useEffect(() => {
-    if (!tokenData?.id) return;
+    if (!tokenData?.id || blocked) return;
     const ch = supabase.channel("token-block").on("postgres_changes", { event: "UPDATE", schema: "public", table: "tokens", filter: `id=eq.${tokenData.id}` }, (p: any) => { if (p.new.status === "blocked") setBlocked(true); }).subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tokenData?.id]);
+  }, [tokenData?.id, blocked]);
+
+  // Fallback checker: ensures blocked screen appears quickly even when realtime subscription is delayed/denied
+  useEffect(() => {
+    if (!tokenCode || blocked) return;
+
+    const checkBlockedStatus = async () => {
+      const { data } = await supabase.rpc("validate_token", { _code: tokenCode });
+      const result = data as any;
+      const errorText = String(result?.error || "").toLowerCase();
+      const isBlockedNow = result?.status === "blocked" || errorText.includes("diblokir");
+      if (isBlockedNow) setBlocked(true);
+    };
+
+    void checkBlockedStatus();
+    const i = window.setInterval(() => { void checkBlockedStatus(); }, 5000);
+    return () => window.clearInterval(i);
+  }, [tokenCode, blocked]);
 
   useEffect(() => {
     if (!nextShowTime || stream?.is_live) { setCountdown(""); return; }
