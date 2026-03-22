@@ -25,6 +25,7 @@ const sections = [
   { id: "site", label: "Pengaturan", icon: Settings },
   { id: "moderators", label: "Akun Moderator", icon: UsersRound },
   { id: "users", label: "Manajemen User", icon: UserCog },
+  { id: "media", label: "Media Library", icon: Image },
 ];
 
 const AdminSidebar = ({ activeSection, onSectionChange, onLogout, mobileOpen, onMobileOpenChange }: AdminSidebarProps) => {

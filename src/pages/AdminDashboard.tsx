@@ -82,6 +82,7 @@ const AdminDashboard = () => {
         </div>
       );
       case "users": return <UserManager />;
+      case "media": return <MediaLibrary />;
       default: return <LiveControl />;
     }
   };
