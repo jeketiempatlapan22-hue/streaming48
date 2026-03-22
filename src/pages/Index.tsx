@@ -785,7 +785,7 @@ const Index = () => {
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Harga</span>
-                  <span className="font-bold text-[hsl(var(--warning))]">{coinShowTarget?.coin_price} Koin</span>
+                  <span className="font-bold text-[hsl(var(--warning))]">{coinShowTarget?.is_replay ? coinShowTarget?.replay_coin_price : coinShowTarget?.coin_price} Koin</span>
                 </div>
                 <div className="flex items-center justify-between text-sm border-t border-border pt-2">
                   <span className="text-muted-foreground">Saldo Anda</span>
