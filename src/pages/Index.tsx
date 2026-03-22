@@ -259,6 +259,7 @@ const Index = () => {
 
   return (
     <div className="relative min-h-screen bg-background">
+      <ConnectionStatus />
       <LandingFloatingEmojis />
 
       {/* Navbar */}
