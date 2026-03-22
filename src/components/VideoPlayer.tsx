@@ -59,12 +59,22 @@ const VideoPlayer = ({ url, type }: VideoPlayerProps) => {
   }
 
   if (type === "cloudflare") {
-    const videoId = url.includes("/") ? url.split("/").pop() : url;
+    // Support full iframe URLs, watch URLs, or plain video IDs
+    let embedUrl = "";
+    if (url.includes("cloudflarestream.com") && url.includes("/iframe")) {
+      embedUrl = url;
+    } else if (url.includes("cloudflarestream.com")) {
+      const id = url.split("/").filter(Boolean).pop();
+      embedUrl = `https://iframe.videodelivery.net/${id}`;
+    } else {
+      // Assume plain video ID
+      embedUrl = `https://iframe.videodelivery.net/${url}`;
+    }
 
     return (
       <div className="aspect-video rounded-lg overflow-hidden border border-border shadow-lg shadow-primary/5">
         <iframe
-          src={`https://customer-${videoId?.includes(".") ? "" : "f33zs165nr7gyfy4"}.cloudflarestream.com/${videoId}/iframe`}
+          src={embedUrl}
           className="w-full h-full"
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
