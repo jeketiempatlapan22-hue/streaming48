@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { LogIn, Eye, EyeOff, Shield } from "lucide-react";
@@ -47,7 +48,7 @@ const Login = () => {
           transition={{ duration: 0.6 }}
         >
           <div className="w-16 h-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center mx-auto mb-4 shadow-[0_0_16px_hsl(var(--primary)/0.3)]">
-            <Shield className="w-7 h-7 text-primary" />
+            <img src={logo} alt="RT48" className="w-7 h-7 rounded-full object-cover" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight" style={{ lineHeight: "1.1" }}>
             Real<span className="text-primary">Time48</span>

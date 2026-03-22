@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
-import { Shield } from "lucide-react";
+import logo from "@/assets/logo.png";
 import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 import PipButton from "@/components/viewer/PipButton";
 
@@ -115,13 +115,13 @@ const LivePage = () => {
 
   const handleUsernameSet = async (name: string) => { setUsername(name); localStorage.setItem("rt48_username", name); setShowUsernameModal(false); const { data: { session } } = await supabase.auth.getSession(); if (session?.user) await supabase.from("profiles").upsert({ id: session.user.id, username: name }, { onConflict: "id" }); };
 
-  if (loading) return (<div className="flex min-h-screen items-center justify-center bg-background"><div className="text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.4)] animate-float"><Shield className="h-8 w-8 text-primary" /></div><p className="text-muted-foreground">Memvalidasi akses...</p></div></div>);
+  if (loading) return (<div className="flex min-h-screen items-center justify-center bg-background"><div className="text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden shadow-[0_0_16px_hsl(var(--primary)/0.4)] animate-float"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div><p className="text-muted-foreground">Memvalidasi akses...</p></div></div>);
 
   if (blocked) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border-2 border-destructive bg-card p-8 text-center"><div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 animate-pulse"><span className="text-4xl">🚫</span></div><h2 className="mb-2 text-2xl font-black text-destructive uppercase">DIBLOKIR</h2><p className="text-sm text-muted-foreground mb-4">Token Anda telah diblokir.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
 
   if (error === "device_limit") return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border border-destructive/30 bg-card p-8 text-center"><h2 className="mb-2 text-xl font-bold text-destructive">Batas Perangkat Tercapai</h2><p className="mb-6 text-muted-foreground">Token sedang digunakan di perangkat lain.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
 
-  if (error === "no_token") return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center animate-float"><Shield className="h-8 w-8 text-primary" /></div><h2 className="mb-2 text-xl font-bold text-foreground">Akses Streaming</h2><p className="mb-6 text-muted-foreground">{purchaseMessage || "Beli token untuk mengakses streaming."}</p>{whatsappNumber && <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground">💬 Hubungi WhatsApp</a>}<div className="mt-4"><a href="/" className="text-sm text-primary hover:underline">← Kembali</a></div></div></div>);
+  if (error === "no_token") return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden animate-float"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div><h2 className="mb-2 text-xl font-bold text-foreground">Akses Streaming</h2><p className="mb-6 text-muted-foreground">{purchaseMessage || "Beli token untuk mengakses streaming."}</p>{whatsappNumber && <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground">💬 Hubungi WhatsApp</a>}<div className="mt-4"><a href="/" className="text-sm text-primary hover:underline">← Kembali</a></div></div></div>);
 
   if (error) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="rounded-xl border border-destructive/30 bg-card p-8 text-center"><h2 className="mb-2 text-xl font-bold text-destructive">Akses Ditolak</h2><p className="text-muted-foreground">{error}</p><div className="mt-4"><a href="/" className="text-sm text-primary hover:underline">← Kembali</a></div></div></div>);
 
@@ -133,7 +133,7 @@ const LivePage = () => {
       {showUsernameModal && <Suspense fallback={null}><UsernameModal onSubmit={handleUsernameSet} /></Suspense>}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
+          <img src={logo} alt="RT48" className="h-8 w-8 rounded-full object-cover" />
           <div className="flex-1 min-w-0"><h1 className="text-sm font-bold text-foreground lg:text-base truncate">{stream?.title || "RealTime48"}</h1></div>
           <PipButton />
           {isLive ? <span className="flex items-center gap-1.5 rounded-full bg-destructive/20 px-3 py-1 text-xs font-semibold text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />LIVE</span> : <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">OFFLINE</span>}
@@ -146,7 +146,7 @@ const LivePage = () => {
             </div>
           ) : (
             <div className="relative flex aspect-video w-full flex-col items-center justify-center bg-card">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center opacity-30"><Shield className="h-8 w-8 text-primary" /></div>
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden opacity-30"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div>
               {countdown ? <div className="text-center"><p className="text-sm text-muted-foreground">Show dimulai dalam</p><p className="mt-2 font-mono text-4xl font-bold text-primary">{countdown}</p></div> : <div className="text-center"><p className="font-mono text-2xl font-bold text-destructive tracking-widest">STREAMING OFFLINE</p><p className="mt-2 text-sm text-muted-foreground">Tidak ada jadwal saat ini</p></div>}
             </div>
           )}

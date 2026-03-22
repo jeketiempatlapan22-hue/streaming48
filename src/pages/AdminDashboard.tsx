@@ -4,14 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import LiveControl from "@/components/admin/LiveControl";
-import TokenFactory from "@/components/admin/TokenFactory";
-import ShowManager from "@/components/admin/ShowManager";
-import CoinPackageManager from "@/components/admin/CoinPackageManager";
-import CoinOrderManager from "@/components/admin/CoinOrderManager";
-import SiteSettingsManager from "@/components/admin/SiteSettingsManager";
-import AdminMonitor from "@/components/admin/AdminMonitor";
-import PollManager from "@/components/admin/PollManager";
+import { lazy, Suspense } from "react";
+
+const LiveControl = lazy(() => import("@/components/admin/LiveControl"));
+const TokenFactory = lazy(() => import("@/components/admin/TokenFactory"));
+const ShowManager = lazy(() => import("@/components/admin/ShowManager"));
+const CoinPackageManager = lazy(() => import("@/components/admin/CoinPackageManager"));
+const CoinOrderManager = lazy(() => import("@/components/admin/CoinOrderManager"));
+const SiteSettingsManager = lazy(() => import("@/components/admin/SiteSettingsManager"));
+const AdminMonitor = lazy(() => import("@/components/admin/AdminMonitor"));
+const PollManager = lazy(() => import("@/components/admin/PollManager"));
+const SubscriptionOrderManager = lazy(() => import("@/components/admin/SubscriptionOrderManager"));
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
@@ -30,24 +33,20 @@ const AdminDashboard = () => {
     checkAuth();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/admin");
-  };
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate("/admin"); };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   const renderSection = () => {
     switch (activeSection) {
       case "live": return <LiveControl />;
       case "tokens": return <TokenFactory />;
       case "shows": return <ShowManager />;
+      case "orders": return <SubscriptionOrderManager />;
       case "coin-packages": return <CoinPackageManager />;
       case "coin-orders": return <CoinOrderManager />;
       case "polls": return <PollManager />;
@@ -59,22 +58,16 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
-      <AdminSidebar
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        onLogout={handleLogout}
-        mobileOpen={mobileOpen}
-        onMobileOpenChange={setMobileOpen}
-      />
+      <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} onLogout={handleLogout} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-3 md:hidden">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)}>
-            <Menu className="h-5 w-5" />
-          </Button>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)}><Menu className="h-5 w-5" /></Button>
           <span className="flex-1 text-sm font-bold text-foreground">Real<span className="text-primary">Time48</span></span>
         </header>
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 lg:p-8">
-          {renderSection()}
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            {renderSection()}
+          </Suspense>
         </main>
       </div>
     </div>

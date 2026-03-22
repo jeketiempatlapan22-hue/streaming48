@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,7 @@ const ViewerAuth = () => {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/15 border-2 border-primary/50 flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.4)]">
-            <Shield className="h-8 w-8 text-primary" />
+            <img src={logo} alt="RT48" className="h-8 w-8 rounded-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Real<span className="text-primary">Time48</span></h1>
           <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">

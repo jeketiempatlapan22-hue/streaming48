@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, Coins, Menu, User, Home, Calendar, Film, Settings, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo.png";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
@@ -45,9 +46,7 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
     <nav className="fixed top-0 left-0 right-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shadow-[0_0_8px_hsl(var(--primary)/0.3)]">
-            <Shield className="h-4 w-4 text-primary" />
-          </div>
+          <img src={logo} alt="RealTime48" className="h-8 w-8 rounded-full object-cover shadow-[0_0_8px_hsl(var(--primary)/0.3)]" />
           <span className="text-sm font-bold">Real<span className="text-primary">Time48</span></span>
         </a>
         <div className="flex items-center gap-2">
@@ -72,9 +71,7 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
             <SheetContent side="right" className="w-80 border-border bg-card">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-foreground">
-                  <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                    <Shield className="h-3 w-3 text-primary" />
-                  </div>
+                  <img src={logo} alt="RealTime48" className="h-6 w-6 rounded-full object-cover" />
                   RealTime48
                 </SheetTitle>
               </SheetHeader>
