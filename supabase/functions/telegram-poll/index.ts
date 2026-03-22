@@ -299,7 +299,71 @@ async function handleAddCoinCommand(supabase: any, botToken: string, chatId: str
   }
 }
 
-function escapeMarkdown(text: string): string {
+async function handleBalanceCommand(supabase: any, botToken: string, chatId: string, username: string) {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .ilike('username', username)
+      .maybeSingle();
+
+    if (!profile) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ User "${escapeMarkdown(username)}" tidak ditemukan\\.`);
+      return;
+    }
+
+    const { data: balData } = await supabase
+      .from('coin_balances')
+      .select('balance')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+
+    const balance = balData?.balance ?? 0;
+
+    await sendTelegramMessage(botToken, chatId,
+      `💰 *Saldo Koin*\n\n👤 User: ${escapeMarkdown(profile.username)}\n🪙 Saldo: *${balance}* koin`
+    );
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleUsersCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!profiles || profiles.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '📋 Belum ada user terdaftar\\.');
+      return;
+    }
+
+    let message = `👥 *DAFTAR USER \\(${profiles.length}\\)*\n\n`;
+
+    for (const p of profiles) {
+      const { data: balData } = await supabase
+        .from('coin_balances')
+        .select('balance')
+        .eq('user_id', p.id)
+        .maybeSingle();
+
+      const bal = balData?.balance ?? 0;
+      const date = new Date(p.created_at).toLocaleDateString('id-ID');
+      message += `• ${escapeMarkdown(p.username || 'No Name')} \\- 🪙 ${bal} koin \\| 📅 ${escapeMarkdown(date)}\n`;
+    }
+
+    message += `\n💡 Cek saldo: \`/balance <username>\`\nTambah koin: \`/addcoin <username> <jumlah>\``;
+
+    await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+
   return String(text || '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
