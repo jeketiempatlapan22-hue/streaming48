@@ -493,6 +493,43 @@ async function processSubOrder(supabase: any, order: any, action: 'approve' | 'r
   }
 }
 
+async function handleMsgShow(supabase: any, showName: string, message: string): Promise<string> {
+  try {
+    const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+    if (!FONNTE_TOKEN) return '⚠️ FONNTE_API_TOKEN tidak dikonfigurasi.';
+
+    const { data: shows } = await supabase.from('shows').select('id, title').eq('is_active', true).ilike('title', `%${showName}%`).limit(5);
+    if (!shows || shows.length === 0) return `⚠️ Show "${showName}" tidak ditemukan.`;
+    if (shows.length > 1) {
+      let msg = `⚠️ Ditemukan ${shows.length} show:\n\n`;
+      for (const s of shows) msg += `• ${s.title}\n`;
+      msg += '\n💡 Gunakan nama yang lebih spesifik.';
+      return msg;
+    }
+
+    const show = shows[0];
+    const { data: orders } = await supabase.from('subscription_orders').select('phone, email').eq('show_id', show.id).eq('status', 'confirmed');
+    const phones = [...new Set((orders || []).map((o: any) => o.phone).filter(Boolean))];
+
+    if (phones.length === 0) return `⚠️ Tidak ada pemesan dengan nomor telepon untuk show "${show.title}".`;
+
+    let sent = 0;
+    let failed = 0;
+    for (const phone of phones) {
+      try {
+        await sendFonnteMessage(FONNTE_TOKEN, phone, message);
+        sent++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return `✅ *Pesan Terkirim!*\n\n🎬 Show: ${show.title}\n📨 Terkirim: ${sent} nomor${failed > 0 ? `\n⚠️ Gagal: ${failed}` : ''}\n\n📝 Pesan: ${message}`;
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
 async function sendFonnteMessage(token: string, target: string, message: string) {
   const cleanPhone = target.replace(/^0/, '62').replace(/[^0-9]/g, '');
   if (!cleanPhone) return;
