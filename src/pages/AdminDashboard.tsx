@@ -21,6 +21,7 @@ const LandingDescriptionManager = lazy(() => import("@/components/admin/LandingD
 const ChatModeratorManager = lazy(() => import("@/components/admin/ChatModeratorManager"));
 const PlaylistManager = lazy(() => import("@/components/admin/PlaylistManager"));
 const AdminLiveLogs = lazy(() => import("@/components/admin/AdminLiveLogs"));
+const AdminOrderNotifications = lazy(() => import("@/components/admin/AdminOrderNotifications"));
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
