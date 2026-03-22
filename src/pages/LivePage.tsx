@@ -15,7 +15,49 @@ const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
 const LivePoll = lazy(() => import("@/components/viewer/LivePoll"));
 
-const LivePage = () => {
+const DeviceLimitScreen = ({ tokenCode, getFingerprint, navigate }: { tokenCode: string; getFingerprint: () => string; navigate: (path: string) => void }) => {
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  const handleReset = async () => {
+    setResetting(true);
+    setResetError("");
+    try {
+      const fp = getFingerprint();
+      const { data } = await supabase.rpc("self_reset_token_session" as any, { _token_code: tokenCode, _fingerprint: fp });
+      const result = data as any;
+      if (result?.success) {
+        setResetSuccess(true);
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        setResetError(result?.error || "Gagal reset sesi.");
+      }
+    } catch { setResetError("Terjadi kesalahan."); }
+    setResetting(false);
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-2xl border border-destructive/30 bg-card p-8 text-center">
+        <h2 className="mb-2 text-xl font-bold text-destructive">Batas Perangkat Tercapai</h2>
+        <p className="mb-4 text-muted-foreground">Token sedang digunakan di perangkat lain.</p>
+        {resetSuccess ? (
+          <p className="text-sm font-medium text-[hsl(var(--success))]">✅ Sesi direset! Memuat ulang...</p>
+        ) : (
+          <div className="space-y-3">
+            <button onClick={handleReset} disabled={resetting} className="w-full rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+              {resetting ? "Mereset..." : "🔄 Reset Sesi (maks 2x/24jam)"}
+            </button>
+            {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+            <button onClick={() => navigate("/")} className="rounded-full bg-secondary px-6 py-3 font-semibold text-secondary-foreground hover:bg-secondary/80">🏠 Ke Beranda</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tokenCode = searchParams.get("t") || "";
