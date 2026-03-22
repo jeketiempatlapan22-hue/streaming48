@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
       const { token_code, playlist_id } = body;
 
       const genClientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (token_code && !edgeRateLimit(`gen:${genClientIp}`, 15, 60000)) {
+      if (token_code && !edgeRateLimit(`gen:${genClientIp}`, 60, 60000)) {
         return getRateLimitResponse();
       }
 
