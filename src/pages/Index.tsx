@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Play, Radio, Film, MonitorPlay, Settings } from "lucide-react";
+import { Play, Radio, Film, MonitorPlay, Settings, Shield } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -53,9 +53,12 @@ const Index = () => {
         <div className="container max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Play className="w-4 h-4 text-primary fill-primary" />
+              <Shield className="w-4 h-4 text-primary" />
             </div>
-            <h1 className="text-lg font-semibold tracking-tight">StreamBox</h1>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight leading-none">RealTime48</h1>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Secure Streaming</p>
+            </div>
           </div>
           <a
             href="/login"
@@ -72,10 +75,10 @@ const Index = () => {
         {/* Hero text */}
         <section className="text-center space-y-3 opacity-0 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>
-            Putar Stream <span className="text-primary">Apapun</span>
+            Streaming <span className="text-primary">Aman & Cepat</span>
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto text-balance">
-            Tempel link M3U8, ID Cloudflare Stream, atau URL YouTube — langsung putar di browser.
+            Tempel link M3U8, ID Cloudflare Stream, atau URL YouTube — putar langsung di RealTime48.
           </p>
         </section>
 
@@ -173,7 +176,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border mt-auto">
         <div className="container max-w-5xl mx-auto px-4 py-4 text-center text-xs text-muted-foreground">
-          StreamBox — Putar M3U8, Cloudflare Stream & YouTube
+          RealTime48 — Secure Streaming Platform
         </div>
       </footer>
     </div>

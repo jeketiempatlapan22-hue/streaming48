@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Pencil, Trash2, LogOut, Play, Radio, Film, MonitorPlay, Power, PowerOff } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, Shield, Radio, Film, MonitorPlay, Power, PowerOff } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -130,10 +130,10 @@ const Admin = () => {
         <div className="container max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Play className="w-4 h-4 text-primary fill-primary" />
+              <Shield className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">Admin Panel</h1>
+              <h1 className="text-lg font-semibold tracking-tight">RealTime48 Admin</h1>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
