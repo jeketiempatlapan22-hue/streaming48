@@ -190,6 +190,8 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/setlive\` \\- Set stream pertama jadi LIVE\n` +
     `\`/setlive <judul>\` \\- Set stream tertentu jadi LIVE\n` +
     `\`/setoffline\` \\- Set semua stream jadi OFFLINE\n\n` +
+    `📨 *Messaging:*\n` +
+    `\`/msgshow <nama show> | <pesan>\` \\- Kirim WA ke semua pemesan show\n\n` +
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini`;
