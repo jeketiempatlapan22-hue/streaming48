@@ -37,6 +37,14 @@ const LivePage = () => {
   const [mismatchShowTitle, setMismatchShowTitle] = useState("");
   const playerRef = useRef<VideoPlayerHandle>(null);
 
+  // IMPORTANT: All hooks must be called before any conditional returns
+  const { signedUrl, loading: signedLoading, proxyType } = useSignedStreamUrl(
+    activePlaylist ? { id: activePlaylist.id, type: activePlaylist.type, url: activePlaylist.url } : null,
+    tokenCode
+  );
+
+  const effectiveType = proxyType === "youtube_proxy" ? "youtube" : (activePlaylist?.type || "m3u8");
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -135,14 +143,13 @@ const LivePage = () => {
 
   const handleUsernameSet = async (name: string) => { setUsername(name); localStorage.setItem("rt48_username", name); setShowUsernameModal(false); const { data: { session } } = await supabase.auth.getSession(); if (session?.user) await supabase.from("profiles").upsert({ id: session.user.id, username: name }, { onConflict: "id" }); };
 
-  // Handle playlist switching: pause current, auto-play new
   const handlePlaylistSwitch = useCallback((newPlaylist: any) => {
     if (activePlaylist?.id === newPlaylist.id) return;
-    // Pause current player before switching
     playerRef.current?.pause();
     setActivePlaylist(newPlaylist);
-    // New player will auto-play via autoPlay prop
   }, [activePlaylist?.id]);
+
+  // === RENDER SECTION (after all hooks) ===
 
   if (loading) return (<div className="flex min-h-screen items-center justify-center bg-background"><div className="text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden shadow-[0_0_16px_hsl(var(--primary)/0.4)] animate-float"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div><p className="text-muted-foreground">Memvalidasi akses...</p></div></div>);
 
@@ -172,13 +179,6 @@ const LivePage = () => {
       </div>
     </div>
   );
-
-  const { signedUrl, loading: signedLoading, proxyType } = useSignedStreamUrl(
-    activePlaylist ? { id: activePlaylist.id, type: activePlaylist.type, url: activePlaylist.url } : null,
-    tokenCode
-  );
-
-  const effectiveType = proxyType === "youtube_proxy" ? "youtube" : (activePlaylist?.type || "m3u8");
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
