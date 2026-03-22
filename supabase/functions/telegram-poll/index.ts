@@ -531,6 +531,38 @@ async function handleReplayToggle(supabase: any, botToken: string, chatId: strin
   }
 }
 
+async function handleSetLiveCommand(supabase: any, botToken: string, chatId: string, title: string | null) {
+  try {
+    if (title) {
+      const { data: streams } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).ilike('title', `%${title}%`).limit(5);
+      if (!streams || streams.length === 0) { await sendTelegramMessage(botToken, chatId, `⚠️ Stream "${escapeMarkdown(title)}" tidak ditemukan\\.`); return; }
+      if (streams.length > 1) {
+        let msg = `⚠️ Ditemukan ${streams.length} stream:\n\n`;
+        for (const s of streams) msg += `• ${escapeMarkdown(s.title)} \\(${s.is_live ? '🟢 LIVE' : '🔴 OFF'}\\)\n`;
+        msg += `\n💡 Gunakan nama yang lebih spesifik\\.`;
+        await sendTelegramMessage(botToken, chatId, msg); return;
+      }
+      await supabase.from('streams').update({ is_live: true }).eq('id', streams[0].id);
+      await sendTelegramMessage(botToken, chatId, `🟢 *Stream LIVE\\!*\n\n📡 ${escapeMarkdown(streams[0].title)} sekarang LIVE\\!`);
+    } else {
+      const { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!stream) { await sendTelegramMessage(botToken, chatId, '⚠️ Tidak ada stream aktif\\.'); return; }
+      await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
+      await sendTelegramMessage(botToken, chatId, `🟢 *Stream LIVE\\!*\n\n📡 ${escapeMarkdown(stream.title)} sekarang LIVE\\!`);
+    }
+  } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`); }
+}
+
+async function handleSetOfflineCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: liveStreams } = await supabase.from('streams').select('id, title').eq('is_live', true);
+    if (!liveStreams || liveStreams.length === 0) { await sendTelegramMessage(botToken, chatId, '📡 Tidak ada stream yang sedang LIVE\\.'); return; }
+    await supabase.from('streams').update({ is_live: false }).eq('is_live', true);
+    const names = liveStreams.map((s: any) => escapeMarkdown(s.title)).join(', ');
+    await sendTelegramMessage(botToken, chatId, `🔴 *Stream OFFLINE\\!*\n\n📡 ${names} sekarang OFFLINE\\.`);
+  } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`); }
+}
+
 function escapeMarkdown(text: string): string {
   return String(text || '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }

@@ -372,7 +372,42 @@ async function handleReplayToggle(supabase: any, showName: string): Promise<stri
   }
 }
 
-async function handleBulkOrders(supabase: any, shortIds: string[], action: 'approve' | 'reject'): Promise<string> {
+async function handleSetLive(supabase: any, title: string | null): Promise<string> {
+  try {
+    if (title) {
+      const { data: streams } = await supabase.from('streams').select('id, title, is_live').eq('is_active', true).ilike('title', `%${title}%`).limit(5);
+      if (!streams || streams.length === 0) return `⚠️ Stream "${title}" tidak ditemukan.`;
+      if (streams.length > 1) {
+        let msg = `⚠️ Ditemukan ${streams.length} stream:\n\n`;
+        for (const s of streams) msg += `• ${s.title} (${s.is_live ? '🟢 LIVE' : '🔴 OFF'})\n`;
+        msg += '\n💡 Gunakan nama yang lebih spesifik.';
+        return msg;
+      }
+      await supabase.from('streams').update({ is_live: true }).eq('id', streams[0].id);
+      return `🟢 *Stream LIVE!*\n\n📡 ${streams[0].title} sekarang LIVE!`;
+    } else {
+      const { data: stream } = await supabase.from('streams').select('id, title').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!stream) return '⚠️ Tidak ada stream aktif.';
+      await supabase.from('streams').update({ is_live: true }).eq('id', stream.id);
+      return `🟢 *Stream LIVE!*\n\n📡 ${stream.title} sekarang LIVE!`;
+    }
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
+async function handleSetOffline(supabase: any): Promise<string> {
+  try {
+    const { data: liveStreams } = await supabase.from('streams').select('id, title').eq('is_live', true);
+    if (!liveStreams || liveStreams.length === 0) return '📡 Tidak ada stream yang sedang LIVE.';
+    await supabase.from('streams').update({ is_live: false }).eq('is_live', true);
+    const names = liveStreams.map((s: any) => s.title).join(', ');
+    return `🔴 *Stream OFFLINE!*\n\n📡 ${names} sekarang OFFLINE.`;
+  } catch (e) {
+    return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+  }
+}
+
   const results: string[] = [];
   for (const shortId of shortIds) {
     const result = await processOrderByShortId(supabase, shortId, action);
