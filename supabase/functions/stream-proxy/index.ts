@@ -345,7 +345,7 @@ Deno.serve(async (req) => {
       const sig = url.searchParams.get("sig");
 
       const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 30, 60000)) {
+      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 180, 60000)) {
         return getRateLimitResponse();
       }
 
