@@ -435,7 +435,7 @@ Deno.serve(async (req) => {
       const sig = url.searchParams.get("sig");
 
       const clientIpSub = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (encoded && !edgeRateLimit(`sub:${clientIpSub}:${encoded.slice(0, 20)}`, 60, 60000)) {
+      if (encoded && !edgeRateLimit(`sub:${clientIpSub}:${encoded.slice(0, 20)}`, 300, 60000)) {
         return getRateLimitResponse();
       }
 
