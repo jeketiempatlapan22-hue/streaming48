@@ -648,7 +648,7 @@ const Index = () => {
               <div className="space-y-6">
                 {descriptions.map((desc: any, i: number) => (
                   <motion.div key={desc.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.1 }}
-                    className={`group relative w-full overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : "text-left"}`}>
+                    className={`group relative w-full overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : desc.text_align === "justify" ? "text-justify" : "text-left"}`}>
                     {desc.image_url ? (
                       <div className="md:flex">
                         <div className="relative h-52 overflow-hidden md:h-auto md:w-2/5 lg:w-1/3">
