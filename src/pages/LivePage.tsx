@@ -186,6 +186,17 @@ const LivePage = () => {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Realtime animation sync from admin panel
+  useEffect(() => {
+    const ch = supabase.channel("animation-rt")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "site_settings" }, (p: any) => {
+        if (p.new?.key === "player_animation") {
+          setPlayerAnimation((p.new.value || "none") as AnimationType);
+        }
+      }).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   // Realtime: block access when show becomes replay
   useEffect(() => {
     if (!tokenData?.show_id) return;
