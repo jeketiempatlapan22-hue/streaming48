@@ -157,9 +157,31 @@ const Index = () => {
       })
       .subscribe();
 
+    // Realtime: descriptions, settings (announcements/quote/title), broadcasts
+    const descCh = supabase.channel("idx-descriptions")
+      .on("postgres_changes", { event: "*", schema: "public", table: "landing_descriptions" }, () => {
+        supabase.from("landing_descriptions").select("*").eq("is_active", true).order("sort_order").then(({ data }) => {
+          if (data) setDescriptions(data as any[]);
+        });
+      })
+      .subscribe();
+    const settingsCh = supabase.channel("idx-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => {
+        supabase.from("site_settings").select("*").then(({ data }) => {
+          if (data) {
+            const s: any = {};
+            data.forEach((row: any) => { s[row.key] = row.value; });
+            setSettings((prev) => ({ ...prev, ...s }));
+          }
+        });
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(showCh);
       supabase.removeChannel(streamCh);
+      supabase.removeChannel(descCh);
+      supabase.removeChannel(settingsCh);
       cleanupBalance.then((cleanup) => cleanup?.());
       window.removeEventListener("beforeinstallprompt", installHandler);
     };
@@ -602,7 +624,7 @@ const Index = () => {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {descriptions.map((desc: any, i: number) => (
                   <motion.div key={desc.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className={`group relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-sm p-6 md:p-8 transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : "text-left"}`}>
+                    className={`group relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-sm p-6 md:p-8 transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : desc.text_align === "justify" ? "text-justify" : "text-left"}`}>
                     {desc.image_url && <img src={desc.image_url} alt={desc.title} className="mb-4 h-40 w-full rounded-xl object-cover" />}
                     <span className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-2xl ${desc.text_align === "center" ? "mx-auto" : desc.text_align === "right" ? "ml-auto" : ""}`}>{desc.icon}</span>
                     <h3 className="mb-3 text-lg font-bold text-foreground md:text-xl">{desc.title}</h3>
@@ -614,7 +636,7 @@ const Index = () => {
               <div className="grid gap-6 md:grid-cols-2">
                 {descriptions.map((desc: any, i: number) => (
                   <motion.div key={desc.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className={`group overflow-hidden rounded-2xl border border-border bg-card/80 p-6 transition-all hover:border-primary/40 hover:shadow-xl ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : "text-left"}`}>
+                    className={`group overflow-hidden rounded-2xl border border-border bg-card/80 p-6 transition-all hover:border-primary/40 hover:shadow-xl ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : desc.text_align === "justify" ? "text-justify" : "text-left"}`}>
                     {desc.image_url && <img src={desc.image_url} alt={desc.title} className="mb-4 h-40 w-full rounded-xl object-cover" />}
                     <span className="mb-3 inline-block text-3xl">{desc.icon}</span>
                     <h3 className="mb-3 text-xl font-bold text-foreground">{desc.title}</h3>
@@ -626,7 +648,7 @@ const Index = () => {
               <div className="space-y-6">
                 {descriptions.map((desc: any, i: number) => (
                   <motion.div key={desc.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.1 }}
-                    className={`group relative w-full overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : "text-left"}`}>
+                    className={`group relative w-full overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 ${desc.text_align === "right" ? "text-right" : desc.text_align === "center" ? "text-center" : desc.text_align === "justify" ? "text-justify" : "text-left"}`}>
                     {desc.image_url ? (
                       <div className="md:flex">
                         <div className="relative h-52 overflow-hidden md:h-auto md:w-2/5 lg:w-1/3">
