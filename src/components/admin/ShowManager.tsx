@@ -159,6 +159,25 @@ const ShowManager = () => {
               </div>
             )}
 
+            {editing.is_replay && editing.access_password && (
+              <div className="space-y-2 rounded-lg border border-accent/30 bg-accent/5 p-3">
+                <p className="text-xs font-medium text-muted-foreground">🎬 Replay Aktif</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => {
+                    navigator.clipboard.writeText(editing.access_password || "");
+                    sonnerToast.success("Password disalin!");
+                  }}>
+                    <Copy className="mr-1 h-3 w-3" /> Salin Password
+                  </Button>
+                  <Button size="sm" className="flex-1 text-xs" onClick={() => {
+                    window.open(`https://replaytime.lovable.app`, "_blank");
+                  }}>
+                    <ExternalLink className="mr-1 h-3 w-3" /> Tonton Replay
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Kategori Show</label>
               <div className="grid grid-cols-2 gap-2">
