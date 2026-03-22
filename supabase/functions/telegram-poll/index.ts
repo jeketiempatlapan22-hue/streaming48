@@ -525,13 +525,14 @@ async function handleReplayList(supabase: any, botToken: string, chatId: string)
       return;
     }
 
-    let message = `🎬 *DAFTAR SHOW REPLAY*\n\n`;
+  let message = `🎬 *DAFTAR SHOW REPLAY*\n\n`;
     for (const s of shows) {
       const status = s.is_replay ? '🟢 ON' : '🔴 OFF';
       const pw = s.access_password ? `🔐 ${escapeMarkdown(s.access_password)}` : '⚠️ No password';
-      message += `${status} *${escapeMarkdown(s.title)}*\n   📅 ${escapeMarkdown(s.schedule_date || '-')} \\| 🪙 ${s.replay_coin_price} koin \\| ${pw}\n\n`;
+      const sid = showShortId(s.id);
+      message += `${status} *${escapeMarkdown(s.title)}* \\(\`#${sid}\`\\)\n   📅 ${escapeMarkdown(s.schedule_date || '-')} \\| 🪙 ${s.replay_coin_price} koin \\| ${pw}\n\n`;
     }
-    message += `💡 Toggle replay: \`/replay <nama show>\``;
+    message += `💡 Toggle replay: \`/replay <nama>\` atau \`/replay #ID\``;
     await sendTelegramMessage(botToken, chatId, message);
   } catch (e) {
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
@@ -540,30 +541,24 @@ async function handleReplayList(supabase: any, botToken: string, chatId: string)
 
 async function handleReplayToggle(supabase: any, botToken: string, chatId: string, showName: string) {
   try {
-    const { data: shows } = await supabase
-      .from('shows')
-      .select('id, title, is_replay, replay_coin_price, access_password')
-      .eq('is_active', true)
-      .ilike('title', `%${showName}%`)
-      .limit(5);
-
-    if (!shows || shows.length === 0) {
-      await sendTelegramMessage(botToken, chatId, `⚠️ Show "${escapeMarkdown(showName)}" tidak ditemukan\\.`);
+    const result = await findShowByIdOrName(supabase, showName);
+    if (result.error) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ ${escapeMarkdown(result.error)}`);
       return;
     }
-
-    if (shows.length > 1) {
-      let msg = `⚠️ Ditemukan ${shows.length} show:\n\n`;
-      for (const s of shows) {
+    if (result.multiple) {
+      let msg = `⚠️ Ditemukan ${result.multiple.length} show:\n\n`;
+      for (const s of result.multiple) {
         const status = s.is_replay ? '🟢 ON' : '🔴 OFF';
-        msg += `${status} ${escapeMarkdown(s.title)}\n`;
+        const sid = showShortId(s.id);
+        msg += `${status} ${escapeMarkdown(s.title)} \\(\`#${sid}\`\\)\n`;
       }
-      msg += `\n💡 Gunakan nama yang lebih spesifik\\.`;
+      msg += `\n💡 Gunakan ID: \`/replay #${showShortId(result.multiple[0].id)}\``;
       await sendTelegramMessage(botToken, chatId, msg);
       return;
     }
 
-    const show = shows[0];
+    const show = result.show;
     const newStatus = !show.is_replay;
 
     await supabase.from('shows').update({ is_replay: newStatus }).eq('id', show.id);
