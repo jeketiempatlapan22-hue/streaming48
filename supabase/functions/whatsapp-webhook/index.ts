@@ -408,6 +408,7 @@ async function handleSetOffline(supabase: any): Promise<string> {
   }
 }
 
+async function handleBulkOrders(supabase: any, shortIds: string[], action: 'approve' | 'reject'): Promise<string> {
   const results: string[] = [];
   for (const shortId of shortIds) {
     const result = await processOrderByShortId(supabase, shortId, action);
