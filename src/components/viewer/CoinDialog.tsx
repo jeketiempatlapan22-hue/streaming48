@@ -50,12 +50,12 @@ const CoinDialog = ({ show, coinBalance, coinRedeeming, coinResult, onClose, onR
               </div>
               <div className="flex items-center justify-between text-sm border-t border-border pt-2">
                 <span className="text-muted-foreground">Saldo Anda</span>
-                <span className={`font-bold ${coinBalance >= (show?.coin_price || 0) ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
+                <span className={`font-bold ${coinBalance >= effectivePrice ? "text-[hsl(var(--success))]" : "text-destructive"}`}>
                   {coinBalance} Koin
                 </span>
               </div>
             </div>
-            {coinBalance < (show?.coin_price || 0) ? (
+            {coinBalance < effectivePrice ? (
               <div className="space-y-3">
                 <p className="text-center text-sm text-destructive">Koin tidak cukup untuk membeli show ini.</p>
                 <Button className="w-full" variant="outline" onClick={() => { onClose(); window.location.href = "/coins"; }}>
