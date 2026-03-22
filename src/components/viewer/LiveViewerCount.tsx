@@ -9,8 +9,10 @@ const LiveViewerCount = ({ isLive }: { isLive: boolean }) => {
   useEffect(() => {
     if (!isLive) { setCount(0); return; }
 
-    const channel = supabase.channel("live-viewers-landing", {
-      config: { presence: { key: `viewer-${Math.random().toString(36).slice(2)}` } },
+    // Use the same channel name as LiveChat ("online-users") so counts match
+    const viewerKey = `landing-${Math.random().toString(36).slice(2)}`;
+    const channel = supabase.channel("online-users", {
+      config: { presence: { key: viewerKey } },
     });
 
     channel
@@ -20,7 +22,7 @@ const LiveViewerCount = ({ isLive }: { isLive: boolean }) => {
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
+          await channel.track({ user: viewerKey, joined_at: new Date().toISOString() });
         }
       });
 
