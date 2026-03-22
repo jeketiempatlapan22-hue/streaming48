@@ -134,6 +134,7 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isReplayList = /^\/replay$/i.test(rawText);
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
+  const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
