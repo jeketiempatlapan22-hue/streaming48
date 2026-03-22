@@ -511,7 +511,7 @@ async function handlePasswordReset(supabase: any, shortId: string, action: 'appr
   try {
     const { data: request } = await supabase
       .from('password_reset_requests')
-      .select('id, user_id, identifier, phone, short_id')
+      .select('id, user_id, identifier, phone, short_id, secure_token')
       .eq('short_id', shortId)
       .eq('status', 'pending')
       .maybeSingle();
@@ -526,8 +526,8 @@ async function handlePasswordReset(supabase: any, shortId: string, action: 'appr
       // Send reset link via WhatsApp if phone exists
       const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
       if (FONNTE_TOKEN && request.phone) {
-        const resetLink = `https://streaming48.lovable.app/reset-password?token=${request.short_id}`;
-        const waMsg = `🔑 *Reset Password Disetujui*\n\nKlik link berikut untuk membuat password baru:\n${resetLink}\n\n⏰ Link berlaku 24 jam.`;
+        const resetLink = `https://streaming48.lovable.app/reset-password?token=${request.secure_token || request.short_id}`;
+        const waMsg = `🔑 *Reset Password Disetujui*\n\nKlik link berikut untuk membuat password baru:\n${resetLink}\n\n⏰ Link berlaku 2 jam.`;
         await sendFonnteMessage(FONNTE_TOKEN, request.phone, waMsg);
       }
 

@@ -13,7 +13,7 @@ const AboutPage = () => {
     Promise.all([
       supabase.from("site_settings").select("key, value"),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
-      supabase.from("shows").select("id", { count: "exact", head: true }),
+      supabase.rpc("get_public_shows"),
     ]).then(([settingsRes, usersRes, showsRes]) => {
       if (settingsRes.data) {
         const s: Record<string, string> = {};
@@ -22,7 +22,7 @@ const AboutPage = () => {
       }
       setStats({
         users: usersRes.count || 0,
-        shows: showsRes.count || 0,
+        shows: showsRes.data?.length || 0,
       });
     });
   }, []);

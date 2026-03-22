@@ -9,9 +9,15 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { short_id, new_password } = await req.json();
+    const { secure_token, new_password } = await req.json();
 
-    if (!short_id || !new_password || new_password.length < 6) {
+    if (!secure_token || typeof secure_token !== 'string' || secure_token.length < 32) {
+      return new Response(JSON.stringify({ success: false, error: 'Token tidak valid' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!new_password || new_password.length < 6) {
       return new Response(JSON.stringify({ success: false, error: 'Password minimal 6 karakter' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -22,11 +28,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Find approved reset request
+    // Find approved reset request by cryptographic secure_token
     const { data: request, error: findErr } = await supabase
       .from('password_reset_requests')
-      .select('id, user_id, short_id, status, processed_at')
-      .eq('short_id', short_id)
+      .select('id, user_id, status, processed_at')
+      .eq('secure_token', secure_token)
       .eq('status', 'approved')
       .maybeSingle();
 
@@ -36,17 +42,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if approved within 24 hours
+    // Check if approved within 2 hours (shortened from 24h)
     if (request.processed_at) {
       const approvedAt = new Date(request.processed_at).getTime();
-      if (Date.now() - approvedAt > 24 * 60 * 60 * 1000) {
+      if (Date.now() - approvedAt > 2 * 60 * 60 * 1000) {
         await supabase.from('password_reset_requests')
           .update({ status: 'expired' })
           .eq('id', request.id);
-        return new Response(JSON.stringify({ success: false, error: 'Link reset sudah expired (24 jam).' }), {
+        return new Response(JSON.stringify({ success: false, error: 'Link reset sudah expired (2 jam).' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    }
+
+    // Mark as completed FIRST (one-time-use enforcement) to prevent race conditions
+    const { error: markErr } = await supabase.from('password_reset_requests')
+      .update({ status: 'completed', new_password: '[user_set]', secure_token: null })
+      .eq('id', request.id)
+      .eq('status', 'approved');
+
+    if (markErr) {
+      return new Response(JSON.stringify({ success: false, error: 'Link sudah digunakan.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Update password via admin API
@@ -64,17 +82,14 @@ Deno.serve(async (req) => {
     });
 
     if (!updateRes.ok) {
-      const err = await updateRes.text();
-      console.error('Failed to update password:', err);
+      // Revert status if password update failed
+      await supabase.from('password_reset_requests')
+        .update({ status: 'approved' })
+        .eq('id', request.id);
       return new Response(JSON.stringify({ success: false, error: 'Gagal mengubah password. Coba lagi.' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Mark as completed
-    await supabase.from('password_reset_requests')
-      .update({ status: 'completed', new_password: '[user_set]' })
-      .eq('id', request.id);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
