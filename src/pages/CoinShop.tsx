@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Coins, Upload, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -97,7 +98,7 @@ const CoinShop = () => {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <a href="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-              <Shield className="h-4 w-4 text-primary" />
+              <img src={logo} alt="RT48" className="h-4 h-4 rounded-full object-cover" />
             </div>
             <span className="text-sm font-bold">Real<span className="text-primary">Time48</span></span>
           </a>

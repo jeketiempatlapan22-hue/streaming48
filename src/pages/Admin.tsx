@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,7 +107,7 @@ const Admin = () => {
         <div className="container max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center shadow-[0_0_8px_hsl(var(--primary)/0.3)]">
-              <Shield className="w-4 h-4 text-primary" />
+              <img src={logo} alt="RT48" className="w-4 h-4 rounded-full object-cover" />
             </div>
             <div>
               <h1 className="text-lg font-semibold tracking-tight">RealTime48 Admin</h1>

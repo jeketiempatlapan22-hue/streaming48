@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import SharedNavbar from "@/components/SharedNavbar";
 import { Calendar, Shield } from "lucide-react";
@@ -70,7 +71,7 @@ const SchedulePage = () => {
       <div className="mx-auto max-w-6xl px-4 py-6 pt-20">
         <div className="mb-8 flex items-center gap-3"><Calendar className="h-6 w-6 text-primary" /><h1 className="text-xl font-bold text-foreground">Jadwal Show</h1></div>
         {loading ? (
-          <div className="flex items-center justify-center py-12"><div className="h-10 w-10 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center animate-pulse"><Shield className="h-5 w-5 text-primary" /></div></div>
+          <div className="flex items-center justify-center py-12"><div className="h-10 w-10 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center animate-pulse"><img src={logo} alt="RT48" className="h-5 w-5 rounded-full object-cover" /></div></div>
         ) : shows.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center"><Calendar className="mx-auto mb-4 h-12 w-12 text-muted-foreground" /><p className="text-lg font-medium text-foreground">Belum ada jadwal show</p></div>
         ) : (
