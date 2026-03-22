@@ -3,10 +3,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Shield } from "lucide-react";
+import ConnectionStatus from "@/components/viewer/ConnectionStatus";
+import PipButton from "@/components/viewer/PipButton";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
 const Watermark = lazy(() => import("@/components/viewer/Watermark"));
+const LivePoll = lazy(() => import("@/components/viewer/LivePoll"));
 
 type StreamType = "m3u8" | "cloudflare" | "youtube";
 
