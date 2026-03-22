@@ -20,6 +20,7 @@ const SystemHealthCheck = lazy(() => import("@/components/admin/SystemHealthChec
 const LandingDescriptionManager = lazy(() => import("@/components/admin/LandingDescriptionManager"));
 const ChatModeratorManager = lazy(() => import("@/components/admin/ChatModeratorManager"));
 const PlaylistManager = lazy(() => import("@/components/admin/PlaylistManager"));
+const AdminLiveLogs = lazy(() => import("@/components/admin/AdminLiveLogs"));
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("live");
