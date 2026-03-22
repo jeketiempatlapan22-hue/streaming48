@@ -482,7 +482,7 @@ const Index = () => {
 
         <div className="relative z-10 text-center px-4">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <div className="mx-auto mb-6 h-28 w-28 md:h-36 md:w-36 rounded-full border-[3px] border-[#c9a96e]/60 flex items-center justify-center shadow-[0_0_30px_rgba(201,169,110,0.3),0_0_60px_rgba(201,169,110,0.1)] animate-float overflow-hidden">
+            <div className="mx-auto mb-3 h-20 w-20 md:h-28 md:w-28 rounded-full border-[3px] border-[#c9a96e]/60 flex items-center justify-center shadow-[0_0_30px_rgba(201,169,110,0.3),0_0_60px_rgba(201,169,110,0.1)] animate-float overflow-hidden">
               <img src={logo} alt="RT48" className="h-full w-full object-cover" />
             </div>
           </motion.div>
