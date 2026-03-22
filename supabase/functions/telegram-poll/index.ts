@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           await supabase.from('telegram_messages').update({ processed: true }).eq('update_id', msg.update_id);
           
           // Cross-notify to WhatsApp (skip read-only commands)
-          const readOnly = /^\/(help|start|status|balance|users|replay)$/i;
+          const readOnly = /^\/(help|start|status|balance|users|replay|shows|showinfo)$/i;
           if (!readOnly.test(cmdText)) {
             await notifyWhatsAppAdmins(supabase, cmdText);
           }
