@@ -123,6 +123,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isHelp = /^\/(help|start)$/i.test(rawText);
   const deductCoinMatch = rawText.match(/^\/deductcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
   const broadcastMatch = rawText.match(/^\/broadcast\s+(.+)$/is);
+  const replayMatch = rawText.match(/^\/replay\s+(.+)$/i);
+  const isReplayList = /^\/replay$/i.test(rawText);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
@@ -138,6 +140,10 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleUsersCommand(supabase, botToken, chatId);
   } else if (broadcastMatch) {
     await handleBroadcastCommand(supabase, botToken, chatId, broadcastMatch[1].trim());
+  } else if (replayMatch) {
+    await handleReplayToggle(supabase, botToken, chatId, replayMatch[1].trim());
+  } else if (isReplayList) {
+    await handleReplayList(supabase, botToken, chatId);
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
@@ -161,6 +167,9 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/balance <user>\` \\- Cek saldo user\n\n` +
     `👥 *User Management:*\n` +
     `\`/users\` \\- Daftar semua user\n\n` +
+    `🎬 *Show Management:*\n` +
+    `\`/replay\` \\- Lihat daftar show yang bisa di\\-replay\n` +
+    `\`/replay <nama show>\` \\- Toggle mode replay show\n\n` +
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini`;
@@ -431,6 +440,75 @@ async function handleUsersCommand(supabase: any, botToken: string, chatId: strin
     message += `\n💡 Cek saldo: \`/balance <username>\`\nTambah koin: \`/addcoin <username> <jumlah>\``;
 
     await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleReplayList(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: shows } = await supabase
+      .from('shows')
+      .select('id, title, is_replay, replay_coin_price, schedule_date, access_password')
+      .eq('is_active', true)
+      .gt('replay_coin_price', 0)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!shows || shows.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '🎬 Tidak ada show dengan harga replay\\.');
+      return;
+    }
+
+    let message = `🎬 *DAFTAR SHOW REPLAY*\n\n`;
+    for (const s of shows) {
+      const status = s.is_replay ? '🟢 ON' : '🔴 OFF';
+      const pw = s.access_password ? `🔐 ${escapeMarkdown(s.access_password)}` : '⚠️ No password';
+      message += `${status} *${escapeMarkdown(s.title)}*\n   📅 ${escapeMarkdown(s.schedule_date || '-')} \\| 🪙 ${s.replay_coin_price} koin \\| ${pw}\n\n`;
+    }
+    message += `💡 Toggle replay: \`/replay <nama show>\``;
+    await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleReplayToggle(supabase: any, botToken: string, chatId: string, showName: string) {
+  try {
+    const { data: shows } = await supabase
+      .from('shows')
+      .select('id, title, is_replay, replay_coin_price, access_password')
+      .eq('is_active', true)
+      .ilike('title', `%${showName}%`)
+      .limit(5);
+
+    if (!shows || shows.length === 0) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ Show "${escapeMarkdown(showName)}" tidak ditemukan\\.`);
+      return;
+    }
+
+    if (shows.length > 1) {
+      let msg = `⚠️ Ditemukan ${shows.length} show:\n\n`;
+      for (const s of shows) {
+        const status = s.is_replay ? '🟢 ON' : '🔴 OFF';
+        msg += `${status} ${escapeMarkdown(s.title)}\n`;
+      }
+      msg += `\n💡 Gunakan nama yang lebih spesifik\\.`;
+      await sendTelegramMessage(botToken, chatId, msg);
+      return;
+    }
+
+    const show = shows[0];
+    const newStatus = !show.is_replay;
+
+    await supabase.from('shows').update({ is_replay: newStatus }).eq('id', show.id);
+
+    const statusText = newStatus ? '🟢 ON' : '🔴 OFF';
+    const pw = show.access_password ? `\n🔐 Password: \`${escapeMarkdown(show.access_password)}\`` : '\n⚠️ Belum ada password\\!';
+    
+    await sendTelegramMessage(botToken, chatId,
+      `✅ *Replay ${newStatus ? 'Diaktifkan' : 'Dinonaktifkan'}\\!*\n\n🎬 Show: ${escapeMarkdown(show.title)}\n📊 Status: ${statusText}\n🪙 Harga: ${show.replay_coin_price} koin${newStatus ? pw : ''}`
+    );
   } catch (e) {
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
   }
