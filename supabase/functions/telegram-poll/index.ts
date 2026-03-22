@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           await supabase.from('telegram_messages').update({ processed: true }).eq('update_id', msg.update_id);
           
           // Cross-notify to WhatsApp (skip read-only commands)
-          const readOnly = /^\/(help|start|status|balance|users|replay)$/i;
+          const readOnly = /^\/(help|start|status|balance|users|replay|shows|showinfo)$/i;
           if (!readOnly.test(cmdText)) {
             await notifyWhatsAppAdmins(supabase, cmdText);
           }
@@ -128,20 +128,24 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const balanceMatch = rawText.match(/^\/balance\s+(\S+)$/i);
   const isUsers = /^\/users$/i.test(rawText);
   const isHelp = /^\/(help|start)$/i.test(rawText);
+  const isShows = /^\/shows$/i.test(rawText);
   const deductCoinMatch = rawText.match(/^\/deductcoin\s+(\S+)\s+(\d+)(?:\s+(.+))?$/i);
   const broadcastMatch = rawText.match(/^\/broadcast\s+(.+)$/is);
-  const replayMatch = rawText.match(/^\/replay\s+(.+)$/i);
+  const replayMatch = rawText.match(/^\/replay\s+#([a-f0-9]{6})$/i);
   const isReplayList = /^\/replay$/i.test(rawText);
-  const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
+  const setliveMatch = rawText.match(/^\/setlive(?:\s+#([a-f0-9]{6}))?$/i);
+  const setofflineMatch = rawText.match(/^\/setoffline(?:\s+#([a-f0-9]{6}))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
   const isShowInfo = /^\/showinfo$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
-  const setactiveMatch = rawText.match(/^\/setactive\s+(\S+)$/i);
+  const setactiveMatch = rawText.match(/^\/setactive\s+#([a-f0-9]{6})$/i);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
+  } else if (isShows) {
+    await handleShowsCommand(supabase, botToken, chatId);
   } else if (isStatus) {
     await handleStatusCommand(supabase, botToken, chatId);
   } else if (addCoinMatch) {
@@ -155,13 +159,13 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   } else if (broadcastMatch) {
     await handleBroadcastCommand(supabase, botToken, chatId, broadcastMatch[1].trim());
   } else if (replayMatch) {
-    await handleReplayToggle(supabase, botToken, chatId, replayMatch[1].trim());
+    await handleReplayToggle(supabase, botToken, chatId, `#${replayMatch[1]}`);
   } else if (isReplayList) {
     await handleReplayList(supabase, botToken, chatId);
   } else if (setactiveMatch) {
-    await handleSetActiveCommand(supabase, botToken, chatId, setactiveMatch[1].trim());
+    await handleSetActiveCommand(supabase, botToken, chatId, `#${setactiveMatch[1]}`);
   } else if (setliveMatch) {
-    await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1]?.trim() || null);
+    await handleSetLiveCommand(supabase, botToken, chatId, setliveMatch[1] ? `#${setliveMatch[1]}` : null);
   } else if (isSetOffline) {
     await handleSetOfflineCommand(supabase, botToken, chatId);
   } else if (isShowInfo) {
@@ -221,13 +225,14 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `👥 *User Management:*\n` +
     `\`/users\` \\- Daftar semua user\n\n` +
     `🎬 *Show Management:*\n` +
-    `\`/replay\` \\- Lihat daftar show \\+ ID\n` +
-    `\`/replay <nama/ID>\` \\- Toggle replay by nama atau \\#ID\n` +
-    `\`/setactive <ID>\` \\- Set show aktif by \\#ID\n\n` +
+    `\`/shows\` \\- Lihat semua show aktif \\+ ID\n` +
+    `\`/replay\` \\- Lihat daftar show replay\n` +
+    `\`/replay #ID\` \\- Toggle replay by ID\n` +
+    `\`/setactive #ID\` \\- Set show aktif by ID\n\n` +
     `📡 *Live Stream:*\n` +
     `\`/showinfo\` \\- Info stream \\& show aktif saat ini\n` +
     `\`/setlive\` \\- Set stream jadi LIVE\n` +
-    `\`/setlive <nama/ID>\` \\- Set LIVE \\+ pilih show aktif\n` +
+    `\`/setlive #ID\` \\- Set LIVE \\+ pilih show aktif\n` +
     `\`/setoffline\` \\- Set semua stream jadi OFFLINE\n\n` +
     `🔑 *Password Reset:*\n` +
     `\`RESET <id>\` \\- Setujui reset password\n` +
@@ -237,8 +242,36 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini\n\n` +
-    `💡 _ID show bisa dilihat di Admin Panel Show Manager \\(\\#6 digit\\)_`;
+    `💡 _Gunakan \\#ID \\(6 digit hex\\) untuk semua aksi show\\. Lihat ID dengan /shows_`;
   await sendTelegramMessage(botToken, chatId, msg);
+}
+
+async function handleShowsCommand(supabase: any, botToken: string, chatId: string) {
+  try {
+    const { data: shows } = await supabase
+      .from('shows')
+      .select('id, title, schedule_date, schedule_time, is_replay, is_active, coin_price, replay_coin_price')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (!shows || shows.length === 0) {
+      await sendTelegramMessage(botToken, chatId, '🎬 Tidak ada show aktif\\.');
+      return;
+    }
+
+    let message = `🎬 *DAFTAR SHOW AKTIF \\(${shows.length}\\)*\n\n`;
+    for (const s of shows) {
+      const sid = showShortId(s.id);
+      const replay = s.is_replay ? ' 🔁 REPLAY' : '';
+      const schedule = s.schedule_date ? `📅 ${escapeMarkdown(s.schedule_date)} ${escapeMarkdown(s.schedule_time || '')}` : '📅 \\-';
+      message += `\`#${sid}\` *${escapeMarkdown(s.title)}*${replay}\n   ${schedule} \\| 🪙 ${s.coin_price}/${s.replay_coin_price}\n\n`;
+    }
+    message += `💡 Gunakan ID untuk aksi:\n\`/setlive #ID\` \\| \`/replay #ID\` \\| \`/setactive #ID\``;
+    await sendTelegramMessage(botToken, chatId, message);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
 }
 
 async function handleDeductCoinCommand(supabase: any, botToken: string, chatId: string, username: string, amount: number, reason: string | null) {

@@ -29,8 +29,8 @@ const PlayerAnimations = ({ type, backgroundOnly = false }: { type: AnimationTyp
     if (type === "none") { setParticles([]); return; }
     const count = type === "rain" ? 60 : type === "confetti" ? 40 : 30;
     setParticles(Array.from({ length: count }, (_, i) => ({
-      id: i, x: Math.random() * 100, y: Math.random() * 100, size: 2 + Math.random() * 6,
-      speed: 3 + Math.random() * 8, opacity: 0.3 + Math.random() * 0.5, delay: Math.random() * 5,
+      id: i, x: Math.random() * 100, y: Math.random() * 100, size: 4 + Math.random() * 10,
+      speed: 3 + Math.random() * 8, opacity: 0.35 + Math.random() * 0.5, delay: Math.random() * 5,
       color: type === "confetti" ? CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] : undefined,
     })));
   }, [type]);
@@ -43,12 +43,12 @@ const PlayerAnimations = ({ type, backgroundOnly = false }: { type: AnimationTyp
       case "snow": return { ...base, top: `-${p.size}px`, width: p.size, height: p.size, borderRadius: "50%", background: "white", animationName: "anim-fall" };
       case "stars": return { ...base, top: `${p.y}%`, width: p.size, height: p.size, borderRadius: "50%", background: "white", animationName: "anim-twinkle", boxShadow: `0 0 ${p.size * 2}px white` };
       case "rain": return { ...base, top: `-10px`, width: 1.5, height: p.size * 3, background: "hsl(var(--primary) / 0.4)", animationName: "anim-rain", animationDuration: `${p.speed * 0.4}s` };
-      case "leaves": return { ...base, top: `-${p.size * 2}px`, fontSize: `${p.size + 6}px`, animationName: "anim-leaf" };
-      case "bubbles": return { ...base, bottom: `-${p.size}px`, width: p.size * 2, height: p.size * 2, borderRadius: "50%", border: "1px solid hsl(var(--primary) / 0.3)", background: "hsl(var(--primary) / 0.05)", animationName: "anim-rise" };
-      case "fireflies": return { ...base, top: `${p.y}%`, width: p.size * 0.8, height: p.size * 0.8, borderRadius: "50%", background: "hsl(50, 100%, 70%)", boxShadow: `0 0 ${p.size * 3}px hsl(50, 100%, 60%)`, animationName: "anim-firefly" };
-      case "confetti": return { ...base, top: `-${p.size}px`, width: p.size * 0.8, height: p.size * 1.5, background: p.color, borderRadius: "1px", animationName: "anim-confetti" };
-      case "hearts": return { ...base, bottom: `-20px`, top: "auto", fontSize: `${p.size + 10}px`, animationName: "anim-float-up", animationDuration: `${p.speed * 1.2}s` };
-      case "sakura": return { ...base, top: `-20px`, fontSize: `${p.size + 8}px`, animationName: "anim-sakura", animationDuration: `${p.speed * 1.1}s` };
+      case "leaves": return { ...base, top: `-${p.size * 2}px`, fontSize: `${p.size + 10}px`, animationName: "anim-leaf" };
+      case "bubbles": return { ...base, bottom: `-${p.size}px`, width: p.size * 2.5, height: p.size * 2.5, borderRadius: "50%", border: "1px solid hsl(var(--primary) / 0.3)", background: "hsl(var(--primary) / 0.05)", animationName: "anim-rise" };
+      case "fireflies": return { ...base, top: `${p.y}%`, width: p.size, height: p.size, borderRadius: "50%", background: "hsl(50, 100%, 70%)", boxShadow: `0 0 ${p.size * 3}px hsl(50, 100%, 60%)`, animationName: "anim-firefly" };
+      case "confetti": return { ...base, top: `-${p.size}px`, width: p.size, height: p.size * 1.8, background: p.color, borderRadius: "1px", animationName: "anim-confetti" };
+      case "hearts": return { ...base, bottom: `-20px`, top: "auto", fontSize: `${p.size + 14}px`, animationName: "anim-float-up", animationDuration: `${p.speed * 1.2}s` };
+      case "sakura": return { ...base, top: `-20px`, fontSize: `${p.size + 12}px`, animationName: "anim-sakura", animationDuration: `${p.speed * 1.1}s` };
       default: return base;
     }
   };

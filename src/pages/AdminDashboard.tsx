@@ -14,7 +14,7 @@ const CoinPackageManager = lazy(() => import("@/components/admin/CoinPackageMana
 const CoinOrderManager = lazy(() => import("@/components/admin/CoinOrderManager"));
 const SiteSettingsManager = lazy(() => import("@/components/admin/SiteSettingsManager"));
 const AdminMonitor = lazy(() => import("@/components/admin/AdminMonitor"));
-const PollManager = lazy(() => import("@/components/admin/PollManager"));
+
 const SubscriptionOrderManager = lazy(() => import("@/components/admin/SubscriptionOrderManager"));
 const SecurityLogManager = lazy(() => import("@/components/admin/SecurityLogManager"));
 const SystemHealthCheck = lazy(() => import("@/components/admin/SystemHealthCheck"));
@@ -27,7 +27,6 @@ const AdminSettings = lazy(() => import("@/components/admin/AdminSettings"));
 const AdminNotifications = lazy(() => import("@/components/admin/AdminNotifications"));
 const ModeratorAccountManager = lazy(() => import("@/components/admin/ModeratorAccountManager"));
 const UserManager = lazy(() => import("@/components/admin/UserManager"));
-const AdminAnalytics = lazy(() => import("@/components/admin/AdminAnalytics"));
 const AdminBroadcast = lazy(() => import("@/components/admin/AdminBroadcast"));
 
 const AdminDashboard = () => {
@@ -58,14 +57,12 @@ const AdminDashboard = () => {
   const renderSection = () => {
     switch (activeSection) {
       case "live": return <><AdminDashboardStats /><div className="mt-6"><LiveControl /></div></>;
-      case "analytics": return <AdminAnalytics />;
       case "tokens": return <TokenFactory />;
       case "shows": return <ShowManager />;
       case "orders": return <SubscriptionOrderManager />;
       case "coin-packages": return <CoinPackageManager />;
       case "coin-orders": return <CoinOrderManager />;
       case "descriptions": return <LandingDescriptionManager />;
-      case "polls": return <PollManager />;
       case "security": return <SecurityLogManager />;
       case "health": return <SystemHealthCheck />;
       case "logs": return <AdminLiveLogs />;

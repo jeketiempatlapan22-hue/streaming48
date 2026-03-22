@@ -163,39 +163,40 @@ const LivePage = () => {
 
   useEffect(() => {
     if (!tokenCode) return;
-    const fp = getFingerprint();
+    const fpVal = getFingerprint();
     const releaseSession = () => {
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/release_token_session`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fp }),
+        body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fpVal }),
         keepalive: true,
       }).catch(() => {});
     };
     window.addEventListener("beforeunload", releaseSession);
-    window.addEventListener("pagehide", releaseSession);
     return () => {
       window.removeEventListener("beforeunload", releaseSession);
-      window.removeEventListener("pagehide", releaseSession);
     };
   }, [tokenCode, getFingerprint]);
 
   useEffect(() => {
     if (!tokenCode || !tokenData?.id) return;
-    const fp = getFingerprint();
+    const fpVal = getFingerprint();
+    let retries = 0;
     const interval = window.setInterval(() => {
       void (async () => {
         try {
           await supabase.rpc("create_token_session", {
             _token_code: tokenCode,
-            _fingerprint: fp,
+            _fingerprint: fpVal,
             _user_agent: navigator.userAgent,
           });
+          retries = 0;
         } catch {
-          // no-op heartbeat failure
+          retries++;
+          // Don't kick user on transient errors — allow up to 5 consecutive failures
         }
       })();
-    }, 45000);
+    }, 120000);
     return () => window.clearInterval(interval);
   }, [tokenCode, tokenData?.id, getFingerprint]);
 
