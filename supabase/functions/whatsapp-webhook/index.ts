@@ -144,6 +144,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (unblocktokenMatch) return await handleTokenCmd(supabase, unblocktokenMatch[1], 'unblock');
   if (resettokenMatch) return await handleTokenCmd(supabase, resettokenMatch[1], 'reset');
   if (deletetokenMatch) return await handleTokenCmd(supabase, deletetokenMatch[1], 'delete');
+  if (tokensListMatch) return await handleTokensList(supabase);
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
