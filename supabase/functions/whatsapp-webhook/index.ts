@@ -113,6 +113,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const isReplayList = /^\/replay$/i.test(rawText);
   const setliveMatch = rawText.match(/^\/setlive(?:\s+(.+))?$/i);
   const isSetOffline = /^\/setoffline$/i.test(rawText);
+  const isShowInfo = /^\/showinfo$/i.test(rawText);
   const msgshowMatch = rawText.match(/^\/msgshow\s+(.+?)\s*\|\s*(.+)$/is);
   const resetMatch = text.match(/^RESET\s+(\S+)$/);
   const tolakResetMatch = text.match(/^TOLAK_RESET\s+(\S+)$/);
@@ -128,6 +129,8 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (isReplayList) return await handleReplayList(supabase);
   if (setliveMatch) return await handleSetLive(supabase, setliveMatch[1]?.trim() || null);
   if (isSetOffline) return await handleSetOffline(supabase);
+  if (isShowInfo) return await handleShowInfo(supabase);
+  if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (msgshowMatch) return await handleMsgShow(supabase, msgshowMatch[1].trim(), msgshowMatch[2].trim());
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
