@@ -12,10 +12,7 @@ import { useSignedStreamUrl } from "@/hooks/useSignedStreamUrl";
 
 const LiveChat = lazy(() => import("@/components/viewer/LiveChat"));
 const UsernameModal = lazy(() => import("@/components/viewer/UsernameModal"));
-const Watermark = lazy(() => import("@/components/viewer/Watermark"));
 const LivePoll = lazy(() => import("@/components/viewer/LivePoll"));
-
-type StreamType = "m3u8" | "cloudflare" | "youtube";
 
 const LivePage = () => {
   const [searchParams] = useSearchParams();
