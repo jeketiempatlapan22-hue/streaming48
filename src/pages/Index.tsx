@@ -75,10 +75,10 @@ const Index = () => {
         {/* Hero text */}
         <section className="text-center space-y-3 opacity-0 animate-fade-in-up" style={{ animationDelay: "0ms" }}>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight" style={{ lineHeight: "1.1" }}>
-            Putar Stream <span className="text-primary">Apapun</span>
+            Streaming <span className="text-primary">Aman & Cepat</span>
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto text-balance">
-            Tempel link M3U8, ID Cloudflare Stream, atau URL YouTube — langsung putar di browser.
+            Tempel link M3U8, ID Cloudflare Stream, atau URL YouTube — putar langsung di RealTime48.
           </p>
         </section>
 
