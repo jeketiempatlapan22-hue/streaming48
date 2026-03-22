@@ -118,9 +118,23 @@ const LivePage = () => {
   useEffect(() => {
     if (!tokenCode) return;
     const fp = getFingerprint();
-    const h = () => { fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/release_token_session`, { method: "POST", headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fp }), keepalive: true }).catch(() => {}); };
-    window.addEventListener("beforeunload", h);
-    return () => window.removeEventListener("beforeunload", h);
+    const releaseSession = () => {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/release_token_session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ _token_code: tokenCode, _fingerprint: fp }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const onVisChange = () => { if (document.visibilityState === "hidden") releaseSession(); };
+    window.addEventListener("beforeunload", releaseSession);
+    window.addEventListener("pagehide", releaseSession);
+    document.addEventListener("visibilitychange", onVisChange);
+    return () => {
+      window.removeEventListener("beforeunload", releaseSession);
+      window.removeEventListener("pagehide", releaseSession);
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
   }, [tokenCode, getFingerprint]);
 
   useEffect(() => {
