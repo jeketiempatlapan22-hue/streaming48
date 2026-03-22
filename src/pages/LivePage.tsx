@@ -254,7 +254,30 @@ const LivePage = () => {
 
   if (loading) return (<div className="flex min-h-screen items-center justify-center bg-background"><div className="text-center"><div className="mx-auto mb-4 h-16 w-16 rounded-full overflow-hidden shadow-[0_0_16px_hsl(var(--primary)/0.4)] animate-float"><img src={logo} alt="RT48" className="h-full w-full object-cover" /></div><p className="text-muted-foreground">Memvalidasi akses...</p></div></div>);
 
-  if (blocked) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border-2 border-destructive bg-card p-8 text-center"><div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 animate-pulse"><span className="text-4xl">🚫</span></div><h2 className="mb-2 text-2xl font-black text-destructive uppercase">DIBLOKIR</h2><p className="text-lg font-bold text-destructive mb-2">DILARANG RESTREAM YA DECK!!!</p><p className="text-sm text-muted-foreground mb-4">Token Anda telah diblokir karena pelanggaran.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
+  if (blocked) return (
+    <div className="flex min-h-screen items-center justify-center bg-destructive/5 px-4">
+      <div className="w-full max-w-lg rounded-2xl border-2 border-destructive bg-card p-8 text-center shadow-[0_0_40px_hsl(var(--destructive)/0.3)]">
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-destructive/10 animate-pulse">
+          <span className="text-5xl">🚫</span>
+        </div>
+        <h1 className="mb-4 text-3xl sm:text-4xl font-black text-destructive uppercase tracking-tight leading-tight animate-pulse">
+          DILARANG RESTREAM YA DEECK !!!!!
+        </h1>
+        <div className="mb-4 rounded-xl bg-destructive/10 border border-destructive/20 p-4">
+          <h2 className="text-lg font-bold text-destructive mb-1">🔒 TOKEN DIBLOKIR</h2>
+          <p className="text-sm text-muted-foreground">
+            Token kamu telah diblokir oleh admin karena terdeteksi pelanggaran. Akses streaming tidak tersedia.
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-6">
+          Jika kamu merasa ini adalah kesalahan, hubungi admin untuk informasi lebih lanjut.
+        </p>
+        <button onClick={() => navigate("/")} className="rounded-full bg-primary px-8 py-3 font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-transform">
+          🏠 Kembali ke Beranda
+        </button>
+      </div>
+    </div>
+  );
 
   if (showReplayBlocked) return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="w-full max-w-md rounded-2xl border border-accent/30 bg-card p-8 text-center"><div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10"><span className="text-4xl">🎬</span></div><h2 className="mb-2 text-xl font-bold text-foreground">Show Telah Berakhir</h2><p className="text-sm text-muted-foreground mb-4">Show ini telah dijadikan replay. Akses streaming langsung tidak tersedia lagi.</p><p className="text-xs text-muted-foreground mb-6">Kamu bisa menonton replay dengan menukarkan koin di halaman utama.</p><button onClick={() => navigate("/")} className="rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">🏠 Ke Beranda</button></div></div>);
 
