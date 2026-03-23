@@ -1065,6 +1065,31 @@ async function handleTopUsersWa(supabase: any): Promise<string> {
   return msg;
 }
 
+async function handleSetPriceWa(supabase: any, showInput: string, priceType: 'coin' | 'replay', price: number): Promise<string> {
+  if (price < 0 || price > 999999) return '⚠️ Harga harus antara 0-999.999';
+
+  // Try to find show by name or short ID
+  const shortIdMatch = showInput.match(/^#?([a-f0-9]{6})$/i);
+  let show: any = null;
+
+  if (shortIdMatch) {
+    const shortId = shortIdMatch[1].toLowerCase();
+    const { data: shows } = await supabase.from('shows').select('id, title, coin_price, replay_coin_price');
+    show = (shows || []).find((s: any) => s.id.replace(/-/g, '').slice(0, 6).toLowerCase() === shortId);
+  } else {
+    const { data: shows } = await supabase.from('shows').select('id, title, coin_price, replay_coin_price').ilike('title', `%${showInput}%`).limit(1);
+    show = shows?.[0];
+  }
+
+  if (!show) return `⚠️ Show "${showInput}" tidak ditemukan.`;
+
+  const field = priceType === 'coin' ? 'coin_price' : 'replay_coin_price';
+  const oldPrice = priceType === 'coin' ? show.coin_price : (show.replay_coin_price ?? 0);
+  await supabase.from('shows').update({ [field]: price }).eq('id', show.id);
+  const label = priceType === 'coin' ? 'Harga Koin' : 'Harga Replay';
+  return `✅ *${label}* untuk *${show.title}* berhasil diubah!\n\n🔄 ${oldPrice} → *${price}* koin`;
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
