@@ -124,6 +124,13 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const resettokenMatch = rawText.match(/^\/resettoken\s+(\S+)$/i);
   const deletetokenMatch = rawText.match(/^\/deletetoken\s+(\S+)$/i);
   const tokensListMatch = /^\/tokens$/i.test(rawText);
+  const isStats = /^\/stats$/i.test(rawText);
+  const cekuserMatch = rawText.match(/^\/cekuser\s+(\S+)$/i);
+  const announceMatch = rawText.match(/^\/announce\s+(.+)$/is);
+  const isShowList = /^\/showlist$/i.test(rawText);
+  const isPendapatan = /^\/pendapatan$/i.test(rawText);
+  const isOrderToday = /^\/ordertoday$/i.test(rawText);
+  const isTopUsers = /^\/topusers$/i.test(rawText);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
@@ -145,6 +152,13 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (resettokenMatch) return await handleTokenCmd(supabase, resettokenMatch[1], 'reset');
   if (deletetokenMatch) return await handleTokenCmd(supabase, deletetokenMatch[1], 'delete');
   if (tokensListMatch) return await handleTokensList(supabase);
+  if (isStats) return await handleStatsWa(supabase);
+  if (cekuserMatch) return await handleCekUserWa(supabase, cekuserMatch[1]);
+  if (announceMatch) return await handleAnnounceWa(supabase, announceMatch[1].trim());
+  if (isShowList) return await handleShowListWa(supabase);
+  if (isPendapatan) return await handlePendapatanWa(supabase);
+  if (isOrderToday) return await handleOrderTodayWa(supabase);
+  if (isTopUsers) return await handleTopUsersWa(supabase);
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
@@ -204,7 +218,16 @@ TOLAK_RESET <id> - Tolak reset password
 
 📢 *Lainnya:*
 /broadcast <pesan> - Kirim notifikasi
-/help - Tampilkan daftar command`;
+/help - Tampilkan daftar command
+
+📊 *Statistik & Analitik:*
+/stats - Statistik lengkap platform
+/cekuser <username> - Detail info user
+/showlist - Daftar semua show + status
+/pendapatan - Ringkasan pendapatan
+/ordertoday - Order hari ini
+/topusers - Top user berdasarkan saldo
+/announce <pesan> - Kirim WA ke semua user`;
 }
 
 async function handleStatus(supabase: any): Promise<string> {
@@ -802,6 +825,240 @@ async function handleTokensList(supabase: any): Promise<string> {
     return `${statusIcon} ...${last4} [${t.status}] ${t.duration_type || ''}`;
   });
   return `🔑 *Daftar Token (${tokens.length}):*\n${lines.join('\n')}\n\n💡 Gunakan 4 digit belakang untuk aksi token.`;
+}
+
+// ======== NEW COMMANDS ========
+
+async function handleStatsWa(supabase: any): Promise<string> {
+  const [usersRes, balRes, tokensRes, coinOrdersRes, subOrdersRes, showsRes, sessionsRes] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    supabase.from('coin_balances').select('balance'),
+    supabase.from('tokens').select('id, status, expires_at', { count: 'exact' }),
+    supabase.from('coin_orders').select('id, status, coin_amount'),
+    supabase.from('subscription_orders').select('id, status'),
+    supabase.from('shows').select('id').eq('is_active', true),
+    supabase.from('token_sessions').select('id').eq('is_active', true),
+  ]);
+  const totalUsers = usersRes.count || 0;
+  const totalCoins = (balRes.data || []).reduce((sum: number, b: any) => sum + (b.balance || 0), 0);
+  const now = new Date();
+  const activeTokens = (tokensRes.data || []).filter((t: any) => t.status === 'active' && (!t.expires_at || new Date(t.expires_at) > now)).length;
+  const blockedTokens = (tokensRes.data || []).filter((t: any) => t.status === 'blocked').length;
+  const pendingCoin = (coinOrdersRes.data || []).filter((o: any) => o.status === 'pending').length;
+  const confirmedCoin = (coinOrdersRes.data || []).filter((o: any) => o.status === 'confirmed').length;
+  const pendingSub = (subOrdersRes.data || []).filter((o: any) => o.status === 'pending').length;
+  const confirmedSub = (subOrdersRes.data || []).filter((o: any) => o.status === 'confirmed').length;
+  const activeSessions = (sessionsRes.data || []).length;
+
+  return `📊 *STATISTIK PLATFORM REALTIME48*
+
+👥 *User:*
+  Total user: *${totalUsers}*
+  Session aktif: *${activeSessions}*
+
+💰 *Koin:*
+  Total koin beredar: *${totalCoins.toLocaleString()}*
+
+🔑 *Token:*
+  Aktif: *${activeTokens}* | Diblokir: *${blockedTokens}*
+
+🪙 *Order Koin:*
+  Pending: *${pendingCoin}* | Dikonfirmasi: *${confirmedCoin}*
+
+🎬 *Subscription:*
+  Pending: *${pendingSub}* | Dikonfirmasi: *${confirmedSub}*
+
+🎭 Show aktif: *${(showsRes.data || []).length}*`;
+}
+
+async function handleCekUserWa(supabase: any, username: string): Promise<string> {
+  const { data: profile } = await supabase.from('profiles').select('id, username, created_at').ilike('username', username).maybeSingle();
+  if (!profile) return `⚠️ User "${username}" tidak ditemukan.`;
+
+  const [balRes, coinOrdersRes, tokensRes] = await Promise.all([
+    supabase.from('coin_balances').select('balance').eq('user_id', profile.id).maybeSingle(),
+    supabase.from('coin_orders').select('id, coin_amount, status, created_at').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(5),
+    supabase.from('tokens').select('code, status, expires_at, duration_type').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(10),
+  ]);
+
+  const balance = balRes.data?.balance ?? 0;
+  const regDate = new Date(profile.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+  const now = new Date();
+
+  let msg = `🔍 *DETAIL USER: ${profile.username || 'Unknown'}*\n\n`;
+  msg += `📅 Terdaftar: ${regDate}\n`;
+  msg += `💰 Saldo koin: *${balance}*\n\n`;
+
+  const userTokens = tokensRes.data || [];
+  if (userTokens.length > 0) {
+    msg += `🔑 *Token (${userTokens.length}):*\n`;
+    for (const t of userTokens) {
+      const expired = t.expires_at && new Date(t.expires_at) < now;
+      const icon = t.status === 'blocked' ? '🔴' : expired ? '🟡' : '🟢';
+      msg += `  ${icon} ...${t.code.slice(-4)} ${t.status} ${t.duration_type || ''}\n`;
+    }
+    msg += '\n';
+  }
+
+  const coinOrders = coinOrdersRes.data || [];
+  if (coinOrders.length > 0) {
+    msg += `🪙 *Order Koin Terakhir:*\n`;
+    for (const o of coinOrders) {
+      const time = new Date(o.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short' });
+      const icon = o.status === 'confirmed' ? '✅' : o.status === 'rejected' ? '❌' : '⏳';
+      msg += `  ${icon} ${o.coin_amount} koin - ${time}\n`;
+    }
+  }
+
+  return msg;
+}
+
+async function handleAnnounceWa(supabase: any, message: string): Promise<string> {
+  const [coinRes, subRes] = await Promise.all([
+    supabase.from('coin_orders').select('phone').not('phone', 'is', null),
+    supabase.from('subscription_orders').select('phone').not('phone', 'is', null),
+  ]);
+
+  const phones = new Set<string>();
+  for (const o of (coinRes.data || [])) { if (o.phone?.trim()) phones.add(o.phone.trim()); }
+  for (const o of (subRes.data || [])) { if (o.phone?.trim()) phones.add(o.phone.trim()); }
+
+  if (phones.size === 0) return '⚠️ Tidak ada nomor HP user yang tersedia.';
+
+  const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+  if (!FONNTE_TOKEN) return '⚠️ FONNTE_API_TOKEN tidak dikonfigurasi.';
+
+  let sent = 0;
+  for (const phone of phones) {
+    try { await sendFonnteMessage(FONNTE_TOKEN, phone, `📢 *PENGUMUMAN REALTIME48*\n\n${message}`); sent++; } catch {}
+  }
+
+  return `✅ Pengumuman terkirim ke *${sent}*/${phones.size} nomor!`;
+}
+
+async function handleShowListWa(supabase: any): Promise<string> {
+  const { data: shows } = await supabase.from('shows').select('id, title, is_active, is_replay, is_subscription, is_order_closed, coin_price, replay_coin_price, schedule_date, schedule_time').order('created_at', { ascending: false }).limit(50);
+  if (!shows || shows.length === 0) return '🎬 Tidak ada show.';
+
+  let msg = `🎬 *DAFTAR SEMUA SHOW (${shows.length})*\n\n`;
+  for (const s of shows) {
+    const sid = s.id.replace(/-/g, '').slice(0, 6).toLowerCase();
+    const status: string[] = [];
+    if (!s.is_active) status.push('❌ Nonaktif');
+    else status.push('✅ Aktif');
+    if (s.is_replay) status.push('🔁 Replay');
+    if (s.is_subscription) status.push('👑 Member');
+    if (s.is_order_closed) status.push('🔒 Tutup');
+
+    const { count } = await supabase.from('subscription_orders').select('id', { count: 'exact', head: true }).eq('show_id', s.id).eq('status', 'confirmed');
+
+    msg += `#${sid} *${s.title}*\n`;
+    msg += `   ${status.join(' | ')}\n`;
+    msg += `   🪙 ${s.coin_price}/${s.replay_coin_price} | 📦 ${count || 0} order\n`;
+    if (s.schedule_date) msg += `   📅 ${s.schedule_date} ${s.schedule_time || ''}\n`;
+    msg += '\n';
+  }
+  return msg;
+}
+
+async function handlePendapatanWa(supabase: any): Promise<string> {
+  const { data: coinOrders } = await supabase.from('coin_orders').select('coin_amount, price, status, created_at').eq('status', 'confirmed');
+  const { data: subOrders } = await supabase.from('subscription_orders').select('id, created_at').eq('status', 'confirmed');
+
+  const totalCoinRevenue = (coinOrders || []).reduce((sum: number, o: any) => {
+    const price = parseInt((o.price || '0').replace(/[^0-9]/g, ''), 10);
+    return sum + price;
+  }, 0);
+  const totalCoinsSold = (coinOrders || []).reduce((sum: number, o: any) => sum + (o.coin_amount || 0), 0);
+
+  const monthlyMap: Record<string, { coin: number; sub: number }> = {};
+  for (const o of (coinOrders || [])) {
+    const month = new Date(o.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', timeZone: 'Asia/Jakarta' });
+    if (!monthlyMap[month]) monthlyMap[month] = { coin: 0, sub: 0 };
+    monthlyMap[month].coin += parseInt((o.price || '0').replace(/[^0-9]/g, ''), 10);
+  }
+  for (const o of (subOrders || [])) {
+    const month = new Date(o.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', timeZone: 'Asia/Jakarta' });
+    if (!monthlyMap[month]) monthlyMap[month] = { coin: 0, sub: 0 };
+    monthlyMap[month].sub++;
+  }
+
+  let msg = `💰 *RINGKASAN PENDAPATAN*\n\n`;
+  msg += `🪙 *Penjualan Koin:*\n`;
+  msg += `  Total order: *${(coinOrders || []).length}*\n`;
+  msg += `  Total koin terjual: *${totalCoinsSold.toLocaleString()}*\n`;
+  msg += `  Total pendapatan: *Rp ${totalCoinRevenue.toLocaleString()}*\n\n`;
+  msg += `🎬 *Subscription:*\n`;
+  msg += `  Total order: *${(subOrders || []).length}*\n\n`;
+
+  const months = Object.entries(monthlyMap).slice(-6);
+  if (months.length > 0) {
+    msg += `📅 *Per Bulan (6 terakhir):*\n`;
+    for (const [month, data] of months) {
+      msg += `  ${month}: Rp ${data.coin.toLocaleString()} | ${data.sub} sub\n`;
+    }
+  }
+  return msg;
+}
+
+async function handleOrderTodayWa(supabase: any): Promise<string> {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
+
+  const [coinRes, subRes] = await Promise.all([
+    supabase.from('coin_orders').select('id, coin_amount, price, status, short_id, created_at').gte('created_at', todayIso).order('created_at', { ascending: false }),
+    supabase.from('subscription_orders').select('id, email, status, short_id, created_at').gte('created_at', todayIso).order('created_at', { ascending: false }),
+  ]);
+
+  const coinOrders = coinRes.data || [];
+  const subOrders = subRes.data || [];
+
+  if (coinOrders.length === 0 && subOrders.length === 0) return '📋 Tidak ada order hari ini.';
+
+  let msg = `📋 *ORDER HARI INI*\n\n`;
+
+  if (coinOrders.length > 0) {
+    const pending = coinOrders.filter((o: any) => o.status === 'pending').length;
+    const confirmed = coinOrders.filter((o: any) => o.status === 'confirmed').length;
+    const rejected = coinOrders.filter((o: any) => o.status === 'rejected').length;
+    msg += `🪙 *Koin (${coinOrders.length}):* ⏳${pending} ✅${confirmed} ❌${rejected}\n`;
+    for (const o of coinOrders.slice(0, 10)) {
+      const icon = o.status === 'confirmed' ? '✅' : o.status === 'rejected' ? '❌' : '⏳';
+      const time = new Date(o.created_at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+      msg += `  ${icon} ${o.short_id || '-'} ${o.coin_amount} koin - ${time}\n`;
+    }
+    msg += '\n';
+  }
+
+  if (subOrders.length > 0) {
+    const pending = subOrders.filter((o: any) => o.status === 'pending').length;
+    const confirmed = subOrders.filter((o: any) => o.status === 'confirmed').length;
+    const rejected = subOrders.filter((o: any) => o.status === 'rejected').length;
+    msg += `🎬 *Subscription (${subOrders.length}):* ⏳${pending} ✅${confirmed} ❌${rejected}\n`;
+    for (const o of subOrders.slice(0, 10)) {
+      const icon = o.status === 'confirmed' ? '✅' : o.status === 'rejected' ? '❌' : '⏳';
+      const time = new Date(o.created_at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+      msg += `  ${icon} ${o.short_id || '-'} ${o.email || '-'} - ${time}\n`;
+    }
+  }
+
+  return msg;
+}
+
+async function handleTopUsersWa(supabase: any): Promise<string> {
+  const { data: balances } = await supabase.from('coin_balances').select('user_id, balance').order('balance', { ascending: false }).limit(15);
+  if (!balances || balances.length === 0) return '👥 Belum ada user dengan saldo koin.';
+
+  let msg = `🏆 *TOP USERS (SALDO KOIN)*\n\n`;
+  let rank = 0;
+  for (const b of balances) {
+    rank++;
+    const { data: profile } = await supabase.from('profiles').select('username').eq('id', b.user_id).maybeSingle();
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+    msg += `${medal} *${profile?.username || 'Unknown'}* - ${b.balance.toLocaleString()} koin\n`;
+  }
+  return msg;
 }
 
 function jsonResponse(body: unknown, status = 200) {
