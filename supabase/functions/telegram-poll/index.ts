@@ -197,6 +197,7 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isPendapatan = /^\/pendapatan$/i.test(rawText);
   const isOrderToday = /^\/ordertoday$/i.test(rawText);
   const isTopUsers = /^\/topusers$/i.test(rawText);
+  const setpriceMatch = rawText.match(/^\/setprice\s+#([a-f0-9]{6})\s+(coin|replay)\s+(\d+)$/i);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
