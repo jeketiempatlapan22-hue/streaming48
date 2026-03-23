@@ -31,7 +31,12 @@ serve(async (req) => {
 
     const shortId = orderData?.short_id || order_id;
     const priceFormatted = escapeMarkdown(Number(price).toLocaleString('id-ID'));
-    const caption = `🪙 *Order Koin Baru\\!*\n\n👤 User: ${escapeMarkdown(username)}\n📦 Paket: ${escapeMarkdown(package_name)}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${priceFormatted}\n🆔 ID: \`${escapeMarkdown(shortId)}\`\n\n✅ Balas *YA ${escapeMarkdown(shortId)}* untuk approve\n❌ Balas *TIDAK ${escapeMarkdown(shortId)}* untuk reject`;
+    const caption = `🪙 *Order Koin Baru\\!*\n\n👤 User: ${escapeMarkdown(username)}\n📦 Paket: ${escapeMarkdown(package_name)}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${priceFormatted}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+
+    const inline_keyboard = [[
+      { text: '✅ Konfirmasi', callback_data: `approve_coin_${shortId}` },
+      { text: '❌ Tolak', callback_data: `reject_coin_${shortId}` },
+    ]];
 
     // WhatsApp text (plain)
     const waText = `🪙 *Order Koin Baru!*\n\n👤 User: ${username}\n📦 Paket: ${package_name}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${Number(price).toLocaleString('id-ID')}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk approve\n❌ Balas *TIDAK ${shortId}* untuk reject`;
