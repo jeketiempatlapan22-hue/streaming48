@@ -131,6 +131,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   const isPendapatan = /^\/pendapatan$/i.test(rawText);
   const isOrderToday = /^\/ordertoday$/i.test(rawText);
   const isTopUsers = /^\/topusers$/i.test(rawText);
+  const setpriceMatch = rawText.match(/^\/setprice\s+(.+?)\s+(coin|replay)\s+(\d+)$/i);
 
   if (isHelp) return handleHelp();
   if (isStatus) return await handleStatus(supabase);
@@ -159,6 +160,7 @@ async function processCommand(supabase: any, rawText: string): Promise<string | 
   if (isPendapatan) return await handlePendapatanWa(supabase);
   if (isOrderToday) return await handleOrderTodayWa(supabase);
   if (isTopUsers) return await handleTopUsersWa(supabase);
+  if (setpriceMatch) return await handleSetPriceWa(supabase, setpriceMatch[1].trim(), setpriceMatch[2].toLowerCase() as 'coin' | 'replay', parseInt(setpriceMatch[3], 10));
   if (resetMatch) return await handlePasswordReset(supabase, resetMatch[1].toLowerCase(), 'approve');
   if (tolakResetMatch) return await handlePasswordReset(supabase, tolakResetMatch[1].toLowerCase(), 'reject');
   if (yaMatch) {
@@ -227,7 +229,9 @@ TOLAK_RESET <id> - Tolak reset password
 /pendapatan - Ringkasan pendapatan
 /ordertoday - Order hari ini
 /topusers - Top user berdasarkan saldo
-/announce <pesan> - Kirim WA ke semua user`;
+/announce <pesan> - Kirim WA ke semua user
+/setprice <nama/ID> coin <harga> - Set harga koin show
+/setprice <nama/ID> replay <harga> - Set harga replay show`;
 }
 
 async function handleStatus(supabase: any): Promise<string> {
@@ -1059,6 +1063,31 @@ async function handleTopUsersWa(supabase: any): Promise<string> {
     msg += `${medal} *${profile?.username || 'Unknown'}* - ${b.balance.toLocaleString()} koin\n`;
   }
   return msg;
+}
+
+async function handleSetPriceWa(supabase: any, showInput: string, priceType: 'coin' | 'replay', price: number): Promise<string> {
+  if (price < 0 || price > 999999) return '⚠️ Harga harus antara 0-999.999';
+
+  // Try to find show by name or short ID
+  const shortIdMatch = showInput.match(/^#?([a-f0-9]{6})$/i);
+  let show: any = null;
+
+  if (shortIdMatch) {
+    const shortId = shortIdMatch[1].toLowerCase();
+    const { data: shows } = await supabase.from('shows').select('id, title, coin_price, replay_coin_price');
+    show = (shows || []).find((s: any) => s.id.replace(/-/g, '').slice(0, 6).toLowerCase() === shortId);
+  } else {
+    const { data: shows } = await supabase.from('shows').select('id, title, coin_price, replay_coin_price').ilike('title', `%${showInput}%`).limit(1);
+    show = shows?.[0];
+  }
+
+  if (!show) return `⚠️ Show "${showInput}" tidak ditemukan.`;
+
+  const field = priceType === 'coin' ? 'coin_price' : 'replay_coin_price';
+  const oldPrice = priceType === 'coin' ? show.coin_price : (show.replay_coin_price ?? 0);
+  await supabase.from('shows').update({ [field]: price }).eq('id', show.id);
+  const label = priceType === 'coin' ? 'Harga Koin' : 'Harga Replay';
+  return `✅ *${label}* untuk *${show.title}* berhasil diubah!\n\n🔄 ${oldPrice} → *${price}* koin`;
 }
 
 function jsonResponse(body: unknown, status = 200) {

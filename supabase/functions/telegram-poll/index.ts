@@ -197,6 +197,7 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
   const isPendapatan = /^\/pendapatan$/i.test(rawText);
   const isOrderToday = /^\/ordertoday$/i.test(rawText);
   const isTopUsers = /^\/topusers$/i.test(rawText);
+  const setpriceMatch = rawText.match(/^\/setprice\s+#([a-f0-9]{6})\s+(coin|replay)\s+(\d+)$/i);
 
   if (isHelp) {
     await handleHelpCommand(botToken, chatId);
@@ -260,6 +261,8 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handleOrderTodayCommand(supabase, botToken, chatId);
   } else if (isTopUsers) {
     await handleTopUsersCommand(supabase, botToken, chatId);
+  } else if (setpriceMatch) {
+    await handleSetPriceCommand(supabase, botToken, chatId, `#${setpriceMatch[1]}`, setpriceMatch[2].toLowerCase() as 'coin' | 'replay', parseInt(setpriceMatch[3], 10));
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
@@ -341,7 +344,9 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/pendapatan\` \\- Ringkasan pendapatan\n` +
     `\`/ordertoday\` \\- Order hari ini\n` +
     `\`/topusers\` \\- Top user berdasarkan saldo\n` +
-    `\`/announce <pesan>\` \\- Kirim WA ke semua user\n\n` +
+    `\`/announce <pesan>\` \\- Kirim WA ke semua user\n` +
+    `\`/setprice #ID coin <harga>\` \\- Set harga koin show\n` +
+    `\`/setprice #ID replay <harga>\` \\- Set harga replay show\n\n` +
     `💡 _Gunakan \\#ID \\(6 digit hex\\) untuk show, 4 digit belakang untuk token\\._`;
   await sendTelegramMessage(botToken, chatId, msg);
 }
@@ -1437,6 +1442,30 @@ async function handleTopUsersCommand(supabase: any, botToken: string, chatId: st
     }
 
     await sendTelegramMessage(botToken, chatId, msg);
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+async function handleSetPriceCommand(supabase: any, botToken: string, chatId: string, showInput: string, priceType: 'coin' | 'replay', price: number) {
+  try {
+    if (price < 0 || price > 999999) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Harga harus antara 0\\-999\\.999');
+      return;
+    }
+    const { show, error } = await findShowByIdOrName(supabase, showInput, false);
+    if (error || !show) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ ${escapeMarkdown(error || 'Show tidak ditemukan')}`);
+      return;
+    }
+    const field = priceType === 'coin' ? 'coin_price' : 'replay_coin_price';
+    const oldPrice = priceType === 'coin' ? show.coin_price : (show.replay_coin_price ?? 0);
+    await supabase.from('shows').update({ [field]: price }).eq('id', show.id);
+    const label = priceType === 'coin' ? 'Harga Koin' : 'Harga Replay';
+    await sendTelegramMessage(botToken, chatId,
+      `✅ *${label}* untuk *${escapeMarkdown(show.title)}* berhasil diubah\\!\n\n` +
+      `🔄 ${oldPrice} → *${price}* koin`
+    );
   } catch (e) {
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
   }
