@@ -34,7 +34,12 @@ serve(async (req) => {
     const typeLabel = order_type === 'replay' ? 'REPLAY' : 'MEMBERSHIP';
     const emoji = order_type === 'replay' ? '🔄' : '🎬';
 
-    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\`\n\n✅ Balas *YA ${escapeMarkdown(shortId)}* untuk konfirmasi\n❌ Balas *TIDAK ${escapeMarkdown(shortId)}* untuk tolak`;
+    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+
+    const inline_keyboard = [[
+      { text: '✅ Konfirmasi', callback_data: `approve_sub_${shortId}` },
+      { text: '❌ Tolak', callback_data: `reject_sub_${shortId}` },
+    ]];
 
     const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
 
@@ -53,6 +58,7 @@ serve(async (req) => {
           formData.append('chat_id', ADMIN_CHAT_ID);
           formData.append('caption', caption);
           formData.append('parse_mode', 'MarkdownV2');
+          formData.append('reply_markup', JSON.stringify({ inline_keyboard }));
           formData.append('photo', fileData, 'payment-proof.jpg');
 
           const photoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
@@ -73,7 +79,7 @@ serve(async (req) => {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2' }),
+        body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2', reply_markup: { inline_keyboard } }),
       });
     }
 

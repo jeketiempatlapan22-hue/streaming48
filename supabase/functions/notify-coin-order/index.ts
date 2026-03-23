@@ -31,7 +31,12 @@ serve(async (req) => {
 
     const shortId = orderData?.short_id || order_id;
     const priceFormatted = escapeMarkdown(Number(price).toLocaleString('id-ID'));
-    const caption = `🪙 *Order Koin Baru\\!*\n\n👤 User: ${escapeMarkdown(username)}\n📦 Paket: ${escapeMarkdown(package_name)}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${priceFormatted}\n🆔 ID: \`${escapeMarkdown(shortId)}\`\n\n✅ Balas *YA ${escapeMarkdown(shortId)}* untuk approve\n❌ Balas *TIDAK ${escapeMarkdown(shortId)}* untuk reject`;
+    const caption = `🪙 *Order Koin Baru\\!*\n\n👤 User: ${escapeMarkdown(username)}\n📦 Paket: ${escapeMarkdown(package_name)}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${priceFormatted}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+
+    const inline_keyboard = [[
+      { text: '✅ Konfirmasi', callback_data: `approve_coin_${shortId}` },
+      { text: '❌ Tolak', callback_data: `reject_coin_${shortId}` },
+    ]];
 
     // WhatsApp text (plain)
     const waText = `🪙 *Order Koin Baru!*\n\n👤 User: ${username}\n📦 Paket: ${package_name}\n💰 Jumlah: ${coin_amount} koin\n💵 Harga: Rp ${Number(price).toLocaleString('id-ID')}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk approve\n❌ Balas *TIDAK ${shortId}* untuk reject`;
@@ -50,6 +55,7 @@ serve(async (req) => {
           formData.append('chat_id', ADMIN_CHAT_ID);
           formData.append('caption', caption);
           formData.append('parse_mode', 'MarkdownV2');
+          formData.append('reply_markup', JSON.stringify({ inline_keyboard }));
           formData.append('photo', fileData, 'payment-proof.jpg');
 
           const photoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
@@ -70,7 +76,7 @@ serve(async (req) => {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2' }),
+        body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2', reply_markup: { inline_keyboard } }),
       });
     }
 
