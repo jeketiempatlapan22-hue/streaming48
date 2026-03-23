@@ -218,7 +218,16 @@ TOLAK_RESET <id> - Tolak reset password
 
 📢 *Lainnya:*
 /broadcast <pesan> - Kirim notifikasi
-/help - Tampilkan daftar command`;
+/help - Tampilkan daftar command
+
+📊 *Statistik & Analitik:*
+/stats - Statistik lengkap platform
+/cekuser <username> - Detail info user
+/showlist - Daftar semua show + status
+/pendapatan - Ringkasan pendapatan
+/ordertoday - Order hari ini
+/topusers - Top user berdasarkan saldo
+/announce <pesan> - Kirim WA ke semua user`;
 }
 
 async function handleStatus(supabase: any): Promise<string> {
