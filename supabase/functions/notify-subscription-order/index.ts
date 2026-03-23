@@ -34,7 +34,12 @@ serve(async (req) => {
     const typeLabel = order_type === 'replay' ? 'REPLAY' : 'MEMBERSHIP';
     const emoji = order_type === 'replay' ? '🔄' : '🎬';
 
-    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\`\n\n✅ Balas *YA ${escapeMarkdown(shortId)}* untuk konfirmasi\n❌ Balas *TIDAK ${escapeMarkdown(shortId)}* untuk tolak`;
+    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+
+    const inline_keyboard = [[
+      { text: '✅ Konfirmasi', callback_data: `approve_sub_${shortId}` },
+      { text: '❌ Tolak', callback_data: `reject_sub_${shortId}` },
+    ]];
 
     const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
 
