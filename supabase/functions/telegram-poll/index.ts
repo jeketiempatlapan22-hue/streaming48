@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       const response = await fetch(`${TELEGRAM_API}${BOT_TOKEN}/getUpdates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offset: currentOffset, timeout: 0, allowed_updates: ['message'] }),
+        body: JSON.stringify({ offset: currentOffset, timeout: 0, allowed_updates: ['message', 'callback_query'] }),
       });
 
       const data = await response.json();
