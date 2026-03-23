@@ -344,7 +344,9 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `\`/pendapatan\` \\- Ringkasan pendapatan\n` +
     `\`/ordertoday\` \\- Order hari ini\n` +
     `\`/topusers\` \\- Top user berdasarkan saldo\n` +
-    `\`/announce <pesan>\` \\- Kirim WA ke semua user\n\n` +
+    `\`/announce <pesan>\` \\- Kirim WA ke semua user\n` +
+    `\`/setprice #ID coin <harga>\` \\- Set harga koin show\n` +
+    `\`/setprice #ID replay <harga>\` \\- Set harga replay show\n\n` +
     `💡 _Gunakan \\#ID \\(6 digit hex\\) untuk show, 4 digit belakang untuk token\\._`;
   await sendTelegramMessage(botToken, chatId, msg);
 }
