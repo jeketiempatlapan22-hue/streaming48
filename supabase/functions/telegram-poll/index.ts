@@ -334,6 +334,14 @@ async function handleHelpCommand(botToken: string, chatId: string) {
     `📢 *Lainnya:*\n` +
     `\`/broadcast <pesan>\` \\- Kirim notifikasi ke semua user\n` +
     `\`/help\` \\- Tampilkan daftar command ini\n\n` +
+    `📊 *Statistik & Analitik:*\n` +
+    `\`/stats\` \\- Statistik lengkap platform\n` +
+    `\`/cekuser <username>\` \\- Detail info user\n` +
+    `\`/showlist\` \\- Daftar semua show \\+ status\n` +
+    `\`/pendapatan\` \\- Ringkasan pendapatan\n` +
+    `\`/ordertoday\` \\- Order hari ini\n` +
+    `\`/topusers\` \\- Top user berdasarkan saldo\n` +
+    `\`/announce <pesan>\` \\- Kirim WA ke semua user\n\n` +
     `💡 _Gunakan \\#ID \\(6 digit hex\\) untuk show, 4 digit belakang untuk token\\._`;
   await sendTelegramMessage(botToken, chatId, msg);
 }
