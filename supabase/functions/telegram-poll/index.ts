@@ -246,6 +246,20 @@ async function processAdminMessage(supabase: any, botToken: string, chatId: stri
     await handlePasswordResetCommand(supabase, botToken, chatId, resetMatch[1].toLowerCase(), 'approve');
   } else if (tolakResetMatch) {
     await handlePasswordResetCommand(supabase, botToken, chatId, tolakResetMatch[1].toLowerCase(), 'reject');
+  } else if (isStats) {
+    await handleStatsCommand(supabase, botToken, chatId);
+  } else if (cekuserMatch) {
+    await handleCekUserCommand(supabase, botToken, chatId, cekuserMatch[1]);
+  } else if (announceMatch) {
+    await handleAnnounceCommand(supabase, botToken, chatId, announceMatch[1].trim());
+  } else if (isShowList) {
+    await handleShowListCommand(supabase, botToken, chatId);
+  } else if (isPendapatan) {
+    await handlePendapatanCommand(supabase, botToken, chatId);
+  } else if (isOrderToday) {
+    await handleOrderTodayCommand(supabase, botToken, chatId);
+  } else if (isTopUsers) {
+    await handleTopUsersCommand(supabase, botToken, chatId);
   } else if (yaMatch) {
     const ids = yaMatch[1].split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     await processBulkOrders(supabase, botToken, chatId, ids, 'approve');
