@@ -846,7 +846,74 @@ async function notifyWhatsAppAdmins(supabase: any, command: string) {
   } catch (e) { console.error('notifyWhatsAppAdmins error:', e); }
 }
 
-async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
+async function processCallbackQuery(supabase: any, botToken: string, chatId: string, cb: any) {
+  const data = cb.data as string;
+  const messageId = cb.message?.message_id;
+
+  try {
+    // Parse callback: approve_coin_<shortId>, reject_coin_<shortId>, approve_sub_<shortId>, reject_sub_<shortId>
+    const match = data.match(/^(approve|reject)_(coin|sub)_(.+)$/);
+    if (!match) return;
+
+    const [, actionStr, orderType, shortId] = match;
+    const action = actionStr === 'approve' ? 'approve' : 'reject';
+
+    let resultText = '';
+
+    if (orderType === 'coin') {
+      const { data: coinOrder } = await supabase.from('coin_orders').select('id, user_id, coin_amount, status, package_id, phone, short_id').eq('short_id', shortId).maybeSingle();
+      if (!coinOrder) {
+        resultText = `⚠️ Order koin ${shortId} tidak ditemukan.`;
+      } else if (coinOrder.status !== 'pending') {
+        resultText = `⚠️ Order koin ${shortId} sudah diproses (${coinOrder.status}).`;
+      } else {
+        await processCoinOrder(supabase, botToken, chatId, coinOrder, action, true);
+        resultText = action === 'approve'
+          ? `✅ Order koin ${shortId} berhasil dikonfirmasi!`
+          : `❌ Order koin ${shortId} telah ditolak.`;
+      }
+    } else {
+      const { data: subOrder } = await supabase.from('subscription_orders').select('id, show_id, phone, email, status, short_id').eq('short_id', shortId).maybeSingle();
+      if (!subOrder) {
+        resultText = `⚠️ Order subscription ${shortId} tidak ditemukan.`;
+      } else if (subOrder.status !== 'pending') {
+        resultText = `⚠️ Order subscription ${shortId} sudah diproses (${subOrder.status}).`;
+      } else {
+        await processSubscriptionOrder(supabase, botToken, chatId, subOrder, action, true);
+        resultText = action === 'approve'
+          ? `✅ Order subscription ${shortId} berhasil dikonfirmasi!`
+          : `❌ Order subscription ${shortId} telah ditolak.`;
+      }
+    }
+
+    // Edit the original message to show result and remove buttons
+    if (messageId) {
+      const originalText = cb.message?.text || cb.message?.caption || '';
+      const updatedText = originalText + `\n\n${resultText}`;
+      
+      // Try editMessageCaption first (for photo messages), fallback to editMessageText
+      if (cb.message?.photo) {
+        await fetch(`${TELEGRAM_API}${botToken}/editMessageCaption`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, message_id: messageId, caption: updatedText, reply_markup: { inline_keyboard: [] } }),
+        });
+      } else {
+        await fetch(`${TELEGRAM_API}${botToken}/editMessageText`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: updatedText, reply_markup: { inline_keyboard: [] } }),
+        });
+      }
+    }
+
+    // Cross-notify WhatsApp
+    await notifyWhatsAppAdmins(supabase, `${action === 'approve' ? 'YA' : 'TIDAK'} ${shortId} (via tombol)`);
+  } catch (e) {
+    console.error('processCallbackQuery error:', e);
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error callback: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
+
   const res = await fetch(`${TELEGRAM_API}${botToken}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'MarkdownV2' }),
