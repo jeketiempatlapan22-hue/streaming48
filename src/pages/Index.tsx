@@ -132,11 +132,14 @@ const Index = () => {
     window.addEventListener("beforeinstallprompt", installHandler);
     window.addEventListener("appinstalled", () => setIsStandalone(true));
     const fetchCoinUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<{ data: { session: null } }>((r) => setTimeout(() => r({ data: { session: null } }), 5000)),
+      ]).catch(() => ({ data: { session: null } }));
       const user = session?.user;
       if (!user) return;
       setCoinUser(user);
-      const [balRes, profileRes] = await Promise.all([
+      const [balRes, profileRes] = await Promise.allSettled([
         supabase.from("coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
       ]);
