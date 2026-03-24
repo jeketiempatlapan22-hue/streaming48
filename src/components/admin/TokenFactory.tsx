@@ -435,7 +435,7 @@ const TokenFactory = () => {
 
       {/* Duration Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as TabKey); setStatusFilter("all"); }}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           {DURATION_TABS.map(({ key, label, emoji }) => (
             <TabsTrigger key={key} value={key} className="gap-1 text-xs">
               <span>{emoji}</span> {label}
