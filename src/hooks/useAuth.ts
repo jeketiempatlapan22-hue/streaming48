@@ -44,14 +44,25 @@ export const useAuth = () => {
         if (currentUser) {
           if (adminCheckRef.current !== currentUser.id) {
             adminCheckRef.current = currentUser.id;
-            const isAdm = await checkAdminSafe(currentUser.id);
+            const [isAdm, banStatus] = await Promise.all([
+              checkAdminSafe(currentUser.id),
+              checkBanStatus(currentUser.id),
+            ]);
             cachedIsAdmin = isAdm;
             setIsAdmin(isAdm);
+            cachedIsBanned = banStatus.banned;
+            cachedBanReason = banStatus.reason || "";
+            setIsBanned(banStatus.banned);
+            setBanReason(banStatus.reason || "");
           }
         } else {
           adminCheckRef.current = null;
           cachedIsAdmin = false;
+          cachedIsBanned = false;
+          cachedBanReason = "";
           setIsAdmin(false);
+          setIsBanned(false);
+          setBanReason("");
         }
         cacheReady = true;
         setLoading(false);
