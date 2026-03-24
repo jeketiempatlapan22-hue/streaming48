@@ -92,6 +92,7 @@ const ViewerProfile = () => {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-12 w-12 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center animate-pulse"><Shield className="h-6 w-6 text-primary" /></div></div>;
+  if (isBanned) return <BannedScreen reason={banReason} onSignOut={authSignOut} />;
 
   return (
     <div className="min-h-screen bg-background">
