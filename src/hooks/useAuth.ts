@@ -11,7 +11,7 @@ async function checkAdminSafe(userId: string): Promise<boolean> {
   try {
     // Race against a 6s timeout to prevent hanging
     const result = await Promise.race([
-      supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+      Promise.resolve(supabase.rpc("has_role", { _user_id: userId, _role: "admin" })),
       new Promise<{ data: null; error: { message: string } }>((resolve) =>
         setTimeout(() => resolve({ data: null, error: { message: "Admin check timeout" } }), 6000)
       ),
