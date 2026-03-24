@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompressor";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import SharedNavbar from "@/components/SharedNavbar";

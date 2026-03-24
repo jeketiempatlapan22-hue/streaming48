@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompressor";
 import { toast } from "sonner";
 import { Upload, Trash2, Copy, Image, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
