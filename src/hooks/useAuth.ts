@@ -28,6 +28,8 @@ async function checkAdminSafe(userId: string): Promise<boolean> {
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(cachedUser);
   const [isAdmin, setIsAdmin] = useState(cachedIsAdmin);
+  const [isBanned, setIsBanned] = useState(cachedIsBanned);
+  const [banReason, setBanReason] = useState(cachedBanReason);
   const [loading, setLoading] = useState(!cacheReady);
   const adminCheckRef = useRef<string | null>(null);
 
