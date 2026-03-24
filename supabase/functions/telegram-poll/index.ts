@@ -1692,6 +1692,69 @@ async function handleSuspiciousCommand(supabase: any, botToken: string, chatId: 
   } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`); }
 }
 
+async function handleCreateTokenCommand(supabase: any, botToken: string, chatId: string, showInput: string, maxDevices: number) {
+  try {
+    const { show, error } = await findShowByIdOrName(supabase, showInput, false);
+    if (error || !show) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ ${escapeMarkdown(error || 'Show tidak ditemukan')}`);
+      return;
+    }
+
+    if (maxDevices < 1 || maxDevices > 10) {
+      await sendTelegramMessage(botToken, chatId, '⚠️ Max device harus antara 1\\-10');
+      return;
+    }
+
+    // Generate token code with RT48- prefix
+    const code = 'RT48-' + Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+    // Calculate expiry: if show has schedule, expire end of that day; otherwise 24h
+    let expiresAt: string | null = null;
+    if (show.schedule_date && show.schedule_time) {
+      const { data: parsed } = await supabase.rpc('parse_show_datetime', { _date: show.schedule_date, _time: show.schedule_time || '23.59 WIB' });
+      if (parsed) {
+        const showDt = new Date(parsed);
+        // End of show day (23:59:59 WIB)
+        const endOfDay = new Date(showDt);
+        endOfDay.setHours(23, 59, 59, 0);
+        // If already past, use 24h from now
+        expiresAt = endOfDay > new Date() ? endOfDay.toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      }
+    }
+    if (!expiresAt) {
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    const { error: insertErr } = await supabase.from('tokens').insert({
+      code,
+      show_id: show.id,
+      max_devices: maxDevices,
+      expires_at: expiresAt,
+      status: 'active',
+    });
+
+    if (insertErr) {
+      await sendTelegramMessage(botToken, chatId, `⚠️ Gagal membuat token: ${escapeMarkdown(insertErr.message)}`);
+      return;
+    }
+
+    const last4 = code.slice(-4);
+    const expDate = new Date(expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    await sendTelegramMessage(botToken, chatId,
+      `✅ *Token Berhasil Dibuat\\!*\n\n` +
+      `🎬 Show: *${escapeMarkdown(show.title)}*\n` +
+      `🔑 Kode: \`${code}\`\n` +
+      `📱 Max Device: *${maxDevices}*\n` +
+      `⏰ Kedaluwarsa: ${escapeMarkdown(expDate)}\n` +
+      `🔢 4 Digit: \`${last4}\`\n\n` +
+      `💡 Link: streaming48\\.lovable\\.app/live?t\\=${code}`
+    );
+  } catch (e) {
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
+  }
+}
+
 function errorResponse(msg: string) {
   console.error('telegram-poll error:', msg);
   return jsonResponse({ error: msg }, 500);
