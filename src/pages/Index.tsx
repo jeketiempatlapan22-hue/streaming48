@@ -772,7 +772,7 @@ const Index = () => {
         </div>
       </footer>
 
-      <InstallBanner />
+      
 
       {/* Purchase Modal */}
       {selectedShow && (
