@@ -41,6 +41,7 @@ const TokenFactory = () => {
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch { return new Set(); }
   });
+  const [lastCopied, setLastCopied] = useState<string[]>([]);
   const { toast } = useToast();
 
   const fetchTokens = async () => {
