@@ -1761,14 +1761,16 @@ async function handleCreateTokenCommand(supabase: any, botToken: string, chatId:
     const last4 = code.slice(-4);
     const expDate = new Date(expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+    const escapedCode = escapeMarkdown(code);
+    const escapedExpDate = escapeMarkdown(expDate);
     await sendTelegramMessage(botToken, chatId,
       `✅ *Token Berhasil Dibuat\\!*\n\n` +
       `🎬 Show: *${escapeMarkdown(show.title)}*\n` +
-      `🔑 Kode: \`${code}\`\n` +
+      `🔑 Kode: \`${escapedCode}\`\n` +
       `📱 Max Device: *${maxDevices}*\n` +
-      `⏰ Kedaluwarsa: ${escapeMarkdown(expDate)}\n` +
+      `⏰ Kedaluwarsa: ${escapedExpDate}\n` +
       `🔢 4 Digit: \`${last4}\`\n\n` +
-      `💡 Link: streaming48\\.lovable\\.app/live?t\\=${code}`
+      `💡 Link: streaming48\\.lovable\\.app/live?t\\=${escapedCode}`
     );
   } catch (e) {
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
