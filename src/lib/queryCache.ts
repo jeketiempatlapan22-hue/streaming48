@@ -110,7 +110,7 @@ export async function fetchCachedEndpoint(
   const cacheKey = `edge_${type}`;
   return cachedQuery(cacheKey, async () => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+    const timer = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(
       `https://${projectId}.supabase.co/functions/v1/cached-landing-data?type=${type}`,
       {
@@ -124,5 +124,17 @@ export async function fetchCachedEndpoint(
     ).finally(() => clearTimeout(timer));
     if (!res.ok) return null;
     return res.json();
-  }, 20_000).catch(() => null);
+  }, 25_000).catch(() => null);
 }
+
+// Preload landing data as early as possible (module-level, fires on import)
+let _preloadPromise: Promise<any> | null = null;
+export function preloadLandingData(): Promise<any> {
+  if (!_preloadPromise) {
+    _preloadPromise = fetchCachedEndpoint("all");
+  }
+  return _preloadPromise;
+}
+
+// Fire preload immediately on module load
+preloadLandingData();

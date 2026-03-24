@@ -44,9 +44,9 @@ async function getLandingData(sb: any) {
   if (landingCache && Date.now() - landingCache.ts < LANDING_TTL) return landingCache.data;
 
   const [settingsRes, descRes, streamRes] = await Promise.all([
-    withTimeout(sb.from("site_settings").select("key, value"), 6000, { data: [] } as any),
-    withTimeout(sb.from("landing_descriptions").select("*").eq("is_active", true).order("sort_order"), 6000, { data: [] } as any),
-    withTimeout(sb.from("streams").select("is_live").limit(1).single(), 6000, { data: null } as any),
+    withTimeout(sb.from("site_settings").select("key, value"), 5000, { data: [] } as any),
+    withTimeout(sb.from("landing_descriptions").select("id, title, content, icon, image_url, text_align, sort_order").eq("is_active", true).order("sort_order"), 5000, { data: [] } as any),
+    withTimeout(sb.from("streams").select("is_live").limit(1).single(), 3000, { data: null } as any),
   ]);
 
   const settings: Record<string, string> = {};
@@ -61,15 +61,19 @@ async function getLandingData(sb: any) {
   return data;
 }
 
+// Minimal show fields needed by landing page cards
+const SHOW_CARD_FIELDS = "id,title,price,lineup,schedule_date,schedule_time,background_image_url,is_subscription,max_subscribers,is_order_closed,category,category_member,coin_price,replay_coin_price,is_replay,is_active,qris_image_url,subscription_benefits,group_link";
+
 async function getPublicShows(sb: any) {
   if (showsCache && Date.now() - showsCache.ts < SHOWS_TTL) return showsCache.data;
 
   const { data } = await withTimeout(
-    sb.rpc("get_public_shows"),
-    7000,
+    sb.from("shows").select(SHOW_CARD_FIELDS).eq("is_active", true).order("created_at", { ascending: false }),
+    5000,
     { data: showsCache?.data ?? [] } as any
   );
-  const shows = data || [];
+  // Strip access_password from response (security + smaller payload)
+  const shows = (data || []).map((s: any) => ({ ...s, access_password: null }));
   showsCache = { data: shows, ts: Date.now() };
   return shows;
 }
@@ -138,7 +142,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=20, stale-while-revalidate=40",
+        "Cache-Control": "public, max-age=25, stale-while-revalidate=60",
       },
     });
   } catch (err: any) {

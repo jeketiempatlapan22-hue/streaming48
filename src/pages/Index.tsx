@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { cachedQuery, invalidateCache, fetchCachedEndpoint } from "@/lib/queryCache";
+import { cachedQuery, invalidateCache, preloadLandingData, fetchCachedEndpoint } from "@/lib/queryCache";
 import LandingFloatingEmojis from "@/components/viewer/LandingFloatingEmojis";
 import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 
@@ -79,8 +79,8 @@ const Index = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   const fetchData = async () => {
-    // Try "all" endpoint — single request, server-side cached
-    const cachedData = await fetchCachedEndpoint("all");
+    // Use preloaded data (already started fetching on module import)
+    const cachedData = await preloadLandingData();
 
     if (cachedData?.shows) {
       // All data from a single cached edge function call (0 direct DB queries!)
