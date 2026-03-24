@@ -115,6 +115,7 @@ const TokenFactory = () => {
   const copyLink = (code: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/live?t=${code}`);
     markAsCopied(code);
+    setLastCopied([code]);
     toast({ title: "Link disalin!" });
   };
 
@@ -129,8 +130,22 @@ const TokenFactory = () => {
     }
     const links = uncopied.map((t) => `${window.location.origin}/live?t=${t.code}`).join("\n");
     navigator.clipboard.writeText(links);
-    uncopied.forEach((t) => markAsCopied(t.code));
+    const codes = uncopied.map((t) => t.code);
+    codes.forEach((c) => markAsCopied(c));
+    setLastCopied(codes);
     toast({ title: `${uncopied.length} link token disalin!` });
+  };
+
+  const undoLastCopy = () => {
+    if (lastCopied.length === 0) return;
+    setCopiedTokens((prev) => {
+      const next = new Set(prev);
+      lastCopied.forEach((c) => next.delete(c));
+      localStorage.setItem("rt48_copied_tokens", JSON.stringify([...next]));
+      return next;
+    });
+    toast({ title: `${lastCopied.length} token dibatalkan tandanya` });
+    setLastCopied([]);
   };
 
   const blockToken = async (id: string) => {
