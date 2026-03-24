@@ -502,7 +502,7 @@ async function handleStatusCommand(supabase: any, botToken: string, chatId: stri
   } catch { await sendTelegramMessage(botToken, chatId, '⚠️ Error mengambil data status'); }
 }
 
-async function processCoinOrder(supabase: any, botToken: string, chatId: string, order: any, action: 'approve' | 'reject', isBulk: boolean) {
+async function processCoinOrder(supabase: any, botToken: string, chatId: string, order: any, action: 'approve' | 'reject', isBulk: boolean): Promise<{ success: boolean; message: string }> {
   try {
     const sid = order.short_id || order.id.substring(0, 6);
     if (action === 'approve') {
@@ -510,8 +510,9 @@ async function processCoinOrder(supabase: any, botToken: string, chatId: string,
       const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_coin_order', { _order_id: order.id });
       if (rpcError || !rpcResult?.success) {
         const errMsg = rpcResult?.error || rpcError?.message || 'Gagal konfirmasi';
-        if (!isBulk) await sendTelegramMessage(botToken, chatId, `⚠️ Order koin \`${escapeMarkdown(sid)}\`: ${escapeMarkdown(errMsg)}`);
-        return;
+        const msg = `⚠️ Order koin \`${escapeMarkdown(sid)}\`: ${escapeMarkdown(errMsg)}`;
+        if (!isBulk) await sendTelegramMessage(botToken, chatId, msg);
+        return { success: false, message: errMsg };
       }
 
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', order.user_id).single();
@@ -522,13 +523,20 @@ async function processCoinOrder(supabase: any, botToken: string, chatId: string,
         await sendFonnteWhatsApp(order.phone, waMsg);
       }
 
-      if (!isBulk) await sendTelegramMessage(botToken, chatId, `✅ Order koin \`${escapeMarkdown(sid)}\` berhasil dikonfirmasi\\!\n👤 ${escapeMarkdown(profile?.username || 'User')}\n💰 \\+${order.coin_amount} koin\n🏦 Saldo: ${newBalance}`);
+      const successMsg = `✅ Order koin \`${escapeMarkdown(sid)}\` berhasil dikonfirmasi\\!\n👤 ${escapeMarkdown(profile?.username || 'User')}\n💰 \\+${order.coin_amount} koin\n🏦 Saldo: ${newBalance}`;
+      if (!isBulk) await sendTelegramMessage(botToken, chatId, successMsg);
+      return { success: true, message: `✅ Order koin ${sid} berhasil dikonfirmasi! +${order.coin_amount} koin, saldo: ${newBalance}` };
     } else {
       await supabase.from('coin_orders').update({ status: 'rejected' }).eq('id', order.id).eq('status', 'pending');
       if (order.phone) await sendFonnteWhatsApp(order.phone, '❌ Maaf, pembayaran kamu untuk pembelian koin tidak dapat dikonfirmasi.\n\nSilakan hubungi admin jika ada pertanyaan.');
-      if (!isBulk) await sendTelegramMessage(botToken, chatId, `❌ Order koin \`${escapeMarkdown(sid)}\` telah ditolak\.`);
+      if (!isBulk) await sendTelegramMessage(botToken, chatId, `❌ Order koin \`${escapeMarkdown(sid)}\` telah ditolak\\.`);
+      return { success: true, message: `❌ Order koin ${sid} ditolak.` };
     }
-  } catch (e) { await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`); }
+  } catch (e) {
+    const errMsg = e instanceof Error ? e.message : 'Unknown';
+    await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${escapeMarkdown(errMsg)}`);
+    return { success: false, message: errMsg };
+  }
 }
 
 async function processSubscriptionOrder(supabase: any, botToken: string, chatId: string, order: any, action: 'approve' | 'reject', isBulk: boolean) {
