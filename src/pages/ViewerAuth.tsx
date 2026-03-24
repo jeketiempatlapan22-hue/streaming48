@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift } from "lucide-react";
+import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift, Eye, EyeOff } from "lucide-react";
 import { checkClientRateLimit, getRateLimitRemaining } from "@/lib/rateLimiter";
 import { recordAuthMetric } from "@/lib/authMetrics";
 import { trackFailedLogin } from "@/lib/suspiciousDetector";
