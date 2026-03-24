@@ -110,6 +110,7 @@ const ViewerAuth = () => {
     }
 
     setLoading(true);
+    setLoginError("");
     const authEmail = getAuthEmail();
     const authStart = performance.now();
 
