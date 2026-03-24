@@ -79,8 +79,8 @@ const Index = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   const fetchData = async () => {
-    // Try "all" endpoint — single request, server-side cached
-    const cachedData = await fetchCachedEndpoint("all");
+    // Use preloaded data (already started fetching on module import)
+    const cachedData = await preloadLandingData();
 
     if (cachedData?.shows) {
       // All data from a single cached edge function call (0 direct DB queries!)

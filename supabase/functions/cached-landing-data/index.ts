@@ -61,15 +61,19 @@ async function getLandingData(sb: any) {
   return data;
 }
 
+// Minimal show fields needed by landing page cards
+const SHOW_CARD_FIELDS = "id,title,price,lineup,schedule_date,schedule_time,background_image_url,is_subscription,max_subscribers,is_order_closed,category,category_member,coin_price,replay_coin_price,is_replay,is_active,qris_image_url,subscription_benefits,group_link";
+
 async function getPublicShows(sb: any) {
   if (showsCache && Date.now() - showsCache.ts < SHOWS_TTL) return showsCache.data;
 
   const { data } = await withTimeout(
-    sb.rpc("get_public_shows"),
-    7000,
+    sb.from("shows").select(SHOW_CARD_FIELDS).eq("is_active", true).order("created_at", { ascending: false }),
+    5000,
     { data: showsCache?.data ?? [] } as any
   );
-  const shows = data || [];
+  // Strip access_password from response (security + smaller payload)
+  const shows = (data || []).map((s: any) => ({ ...s, access_password: null }));
   showsCache = { data: shows, ts: Date.now() };
   return shows;
 }
