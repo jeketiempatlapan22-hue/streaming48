@@ -202,24 +202,10 @@ const Index = () => {
     setCoinResult({ token_code: result.token_code, remaining_balance: result.remaining_balance, replay_password: result.replay_password, access_password: result.access_password });
     setCoinBalance(result.remaining_balance);
 
-    if (coinUser) {
-      const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${coinUser.id}`) || "{}");
-      stored[coinShowTarget.id] = result.token_code;
-      localStorage.setItem(`redeemed_tokens_${coinUser.id}`, JSON.stringify(stored));
-      setRedeemedTokens((prev) => ({ ...prev, [coinShowTarget.id]: result.token_code }));
-
-      if (result.replay_password) {
-        const storedPw = JSON.parse(localStorage.getItem(`replay_passwords_${coinUser.id}`) || "{}");
-        storedPw[coinShowTarget.id] = result.replay_password;
-        localStorage.setItem(`replay_passwords_${coinUser.id}`, JSON.stringify(storedPw));
-        setReplayPasswords((prev) => ({ ...prev, [coinShowTarget.id]: result.replay_password }));
-      }
-      if (result.access_password) {
-        const storedAp = JSON.parse(localStorage.getItem(`access_passwords_${coinUser.id}`) || "{}");
-        storedAp[coinShowTarget.id] = result.access_password;
-        localStorage.setItem(`access_passwords_${coinUser.id}`, JSON.stringify(storedAp));
-        setAccessPasswords((prev) => ({ ...prev, [coinShowTarget.id]: result.access_password }));
-      }
+    if (coinUser && result.token_code) {
+      addRedeemedToken(coinShowTarget.id, result.token_code);
+      if (result.replay_password) addReplayPassword(coinShowTarget.id, result.replay_password);
+      if (result.access_password) addAccessPassword(coinShowTarget.id, result.access_password);
     }
   };
 
