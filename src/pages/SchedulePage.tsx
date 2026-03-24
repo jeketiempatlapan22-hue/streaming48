@@ -72,10 +72,8 @@ const SchedulePage = () => {
     const result = data as any;
     if (error || !result?.success) { toast.error(result?.error || "Gagal"); return; }
     toast.success(`Token: ${result.token_code}`);
-    const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${coinUser.id}`) || "{}");
-    stored[show.id] = result.token_code;
-    localStorage.setItem(`redeemed_tokens_${coinUser.id}`, JSON.stringify(stored));
-    setRedeemedTokens(prev => ({ ...prev, [show.id]: result.token_code }));
+    addRedeemedToken(show.id, result.token_code);
+    if (result.access_password) addAccessPassword(show.id, result.access_password);
   };
 
   const filteredShows = shows.filter(s => {
