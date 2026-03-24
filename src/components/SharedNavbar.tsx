@@ -60,6 +60,7 @@ const SharedNavbar = ({ showCoinBadge = true }: SharedNavbarProps) => {
       window.removeEventListener("beforeinstallprompt", handler);
       clearTimeout(timer);
     };
+  }, []);
 
   const handleInstallClick = async () => {
     if (installPrompt) {
