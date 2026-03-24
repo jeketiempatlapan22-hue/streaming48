@@ -373,8 +373,8 @@ const TokenFactory = () => {
               type="number"
               min="1"
               max="365"
-              value={customHours}
-              onChange={(e) => setCustomHours(e.target.value)}
+              value={customDays}
+              onChange={(e) => setCustomDays(e.target.value)}
               className="w-24 bg-background"
               placeholder="3"
             />
