@@ -15,8 +15,7 @@ interface Description {
 const LandingDescriptionManager = () => {
   const [items, setItems] = useState<Description[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [showGallery, setShowGallery] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryTargetId, setGalleryTargetId] = useState<string | null>(null);
 
   // Layout settings
