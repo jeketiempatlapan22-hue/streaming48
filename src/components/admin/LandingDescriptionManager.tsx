@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompressor";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -69,8 +70,9 @@ const LandingDescriptionManager = () => {
     toast({ title: "Deskripsi dihapus" });
   };
 
-  const uploadImage = async (file: File, itemId: string) => {
+  const uploadImage = async (rawFile: File, itemId: string) => {
     setUploading(true);
+    const file = await compressImage(rawFile);
     const fileName = `${crypto.randomUUID()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("show-images").upload(fileName, file);
     if (error) { toast({ title: "Upload gagal", variant: "destructive" }); setUploading(false); return; }

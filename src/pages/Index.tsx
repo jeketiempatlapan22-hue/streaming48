@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompressor";
 import { motion, AnimatePresence } from "framer-motion";
 import { cachedQuery, invalidateCache, preloadLandingData, fetchCachedEndpoint } from "@/lib/queryCache";
 import LandingFloatingEmojis from "@/components/viewer/LandingFloatingEmojis";
@@ -277,11 +278,12 @@ const Index = () => {
   };
 
   const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedShow) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("File terlalu besar (max 5MB)"); return; }
+    const rawFile = e.target.files?.[0];
+    if (!rawFile || !selectedShow) return;
+    if (rawFile.size > 5 * 1024 * 1024) { toast.error("File terlalu besar (max 5MB)"); return; }
     setUploadingProof(true);
     try {
+      const file = await compressImage(rawFile);
       const ext = file.name.split(".").pop();
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage.from("payment-proofs").upload(path, file);
