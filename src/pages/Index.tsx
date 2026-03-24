@@ -64,16 +64,14 @@ const Index = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
-  // Coin state
-  const [coinUser, setCoinUser] = useState<any>(null);
-  const [coinBalance, setCoinBalance] = useState(0);
-  const [coinUsername, setCoinUsername] = useState("");
+  // Coin & purchase state from DB + localStorage
+  const {
+    coinUser, coinBalance, coinUsername, redeemedTokens, accessPasswords, replayPasswords,
+    addRedeemedToken, addAccessPassword, addReplayPassword, setCoinBalance,
+  } = usePurchasedShows();
   const [coinShowTarget, setCoinShowTarget] = useState<Show | null>(null);
   const [coinRedeeming, setCoinRedeeming] = useState(false);
   const [coinResult, setCoinResult] = useState<{ token_code: string; remaining_balance: number; replay_password?: string; access_password?: string } | null>(null);
-  const [redeemedTokens, setRedeemedTokens] = useState<Record<string, string>>({});
-  const [replayPasswords, setReplayPasswords] = useState<Record<string, string>>({});
-  const [accessPasswords, setAccessPasswords] = useState<Record<string, string>>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [loginPopup, setLoginPopup] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
