@@ -111,6 +111,5 @@ const App = () => {
     </ErrorBoundary>
   );
 };
-);
 
 export default App;
