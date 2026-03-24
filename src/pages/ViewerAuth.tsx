@@ -144,7 +144,6 @@ const ViewerAuth = () => {
             }
             toast.error("Server sedang sibuk, coba lagi sebentar.");
           } else if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("User already registered")) {
-            // Auto-try login with the same credentials
             const loginResult = await authWithRetry(
               () => supabase.auth.signInWithPassword({ email: authEmail, password }),
               15_000, 1
@@ -155,9 +154,12 @@ const ViewerAuth = () => {
               navigate("/coins");
               return;
             }
-            // Login failed too — switch to login mode
-            toast.error("Nomor/email sudah terdaftar. Password tidak cocok, silakan login ulang.");
+            setFailCount((c) => c + 1);
+            setLoginError("Nomor/email sudah terdaftar tapi password tidak cocok.");
+            toast.error("Nomor/email sudah terdaftar tapi password tidak cocok.");
             setMode("login");
+          } else if (msg.includes("email_address_invalid") || msg.includes("invalid") || msg.includes("valid email")) {
+            toast.error("Format nomor HP atau email tidak valid. Periksa kembali.");
           } else {
             toast.error(msg);
           }
