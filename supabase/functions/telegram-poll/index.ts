@@ -904,7 +904,7 @@ async function collectShowBuyerPhones(supabase: any, showId: string): Promise<st
   return [...phones].filter(Boolean);
 }
 
-
+async function sendFonnteWhatsApp(phone: string, message: string) {
   const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
   if (!FONNTE_TOKEN) return;
   const cleanPhone = phone.replace(/^0/, '62').replace(/[^0-9]/g, '');
