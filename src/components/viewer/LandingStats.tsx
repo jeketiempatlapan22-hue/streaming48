@@ -42,11 +42,9 @@ const LandingStats = () => {
     fetchData();
   }, []);
 
-  // Subscribe to Supabase Presence on "online-users" channel (read-only observer)
-  // Use a unique channel name to avoid conflicts with LiveChat's channel
+  // Subscribe to Supabase Presence on "online-users" channel (read-only)
   useEffect(() => {
-    const channelName = `online-users-stats-${Math.random().toString(36).slice(2, 8)}`;
-    const channel = supabase.channel(channelName);
+    const channel = supabase.channel("online-users");
 
     channel
       .on("presence", { event: "sync" }, () => {
