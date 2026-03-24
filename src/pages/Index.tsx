@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/imageCompressor";
 import { motion, AnimatePresence } from "framer-motion";
 import { cachedQuery, invalidateCache, preloadLandingData, fetchCachedEndpoint } from "@/lib/queryCache";
+import { usePurchasedShows } from "@/hooks/usePurchasedShows";
 import LandingFloatingEmojis from "@/components/viewer/LandingFloatingEmojis";
 import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 
@@ -64,16 +65,14 @@ const Index = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
-  // Coin state
-  const [coinUser, setCoinUser] = useState<any>(null);
-  const [coinBalance, setCoinBalance] = useState(0);
-  const [coinUsername, setCoinUsername] = useState("");
+  // Coin & purchase state from DB + localStorage
+  const {
+    coinUser, coinBalance, coinUsername, redeemedTokens, accessPasswords, replayPasswords,
+    addRedeemedToken, addAccessPassword, addReplayPassword, setCoinBalance,
+  } = usePurchasedShows();
   const [coinShowTarget, setCoinShowTarget] = useState<Show | null>(null);
   const [coinRedeeming, setCoinRedeeming] = useState(false);
   const [coinResult, setCoinResult] = useState<{ token_code: string; remaining_balance: number; replay_password?: string; access_password?: string } | null>(null);
-  const [redeemedTokens, setRedeemedTokens] = useState<Record<string, string>>({});
-  const [replayPasswords, setReplayPasswords] = useState<Record<string, string>>({});
-  const [accessPasswords, setAccessPasswords] = useState<Record<string, string>>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [loginPopup, setLoginPopup] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -132,49 +131,7 @@ const Index = () => {
     };
     window.addEventListener("beforeinstallprompt", installHandler);
     window.addEventListener("appinstalled", () => setIsStandalone(true));
-    const fetchCoinUser = async () => {
-      const { data: { session } } = await Promise.race([
-        supabase.auth.getSession(),
-        new Promise<{ data: { session: null } }>((r) => setTimeout(() => r({ data: { session: null } }), 5000)),
-      ]).catch(() => ({ data: { session: null } }));
-      const user = session?.user;
-      if (!user) return;
-      setCoinUser(user);
-      const [balRes, profileRes] = await Promise.allSettled([
-        supabase.from("coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
-        supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
-      ]);
-      setCoinBalance(balRes.status === "fulfilled" ? (balRes.value.data?.balance || 0) : 0);
-      setCoinUsername(profileRes.status === "fulfilled" ? (profileRes.value.data?.username || user.user_metadata?.username || "") : "");
-
-      try {
-        const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${user.id}`) || "{}");
-        setRedeemedTokens(stored);
-      } catch {}
-      try {
-        const storedPw = JSON.parse(localStorage.getItem(`replay_passwords_${user.id}`) || "{}");
-        setReplayPasswords(storedPw);
-      } catch {}
-      try {
-        const storedAp = JSON.parse(localStorage.getItem(`access_passwords_${user.id}`) || "{}");
-        setAccessPasswords(storedAp);
-      } catch {}
-
-      const balCh = supabase
-        .channel(`idx-balance-${user.id}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "coin_balances", filter: `user_id=eq.${user.id}` }, (payload: any) => {
-          if (payload.new?.balance !== undefined) {
-            const oldBal = payload.old?.balance ?? 0;
-            const newBal = payload.new.balance;
-            setCoinBalance(newBal);
-            if (newBal > oldBal) toast.success(`+${newBal - oldBal} koin telah masuk! Saldo: ${newBal}`);
-          }
-        })
-        .subscribe();
-
-      return () => { supabase.removeChannel(balCh); };
-    };
-    const cleanupBalance = fetchCoinUser();
+    // Coin user state is now managed by usePurchasedShows hook
 
     // Single combined realtime channel instead of 4 separate ones — reduces DB connections
     const realtimeCh = supabase.channel("idx-combined")
@@ -195,7 +152,6 @@ const Index = () => {
     return () => {
       supabase.removeChannel(realtimeCh);
       clearInterval(settingsPoll);
-      cleanupBalance.then((cleanup) => cleanup?.());
       window.removeEventListener("beforeinstallprompt", installHandler);
     };
   }, []);
@@ -245,24 +201,10 @@ const Index = () => {
     setCoinResult({ token_code: result.token_code, remaining_balance: result.remaining_balance, replay_password: result.replay_password, access_password: result.access_password });
     setCoinBalance(result.remaining_balance);
 
-    if (coinUser) {
-      const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${coinUser.id}`) || "{}");
-      stored[coinShowTarget.id] = result.token_code;
-      localStorage.setItem(`redeemed_tokens_${coinUser.id}`, JSON.stringify(stored));
-      setRedeemedTokens((prev) => ({ ...prev, [coinShowTarget.id]: result.token_code }));
-
-      if (result.replay_password) {
-        const storedPw = JSON.parse(localStorage.getItem(`replay_passwords_${coinUser.id}`) || "{}");
-        storedPw[coinShowTarget.id] = result.replay_password;
-        localStorage.setItem(`replay_passwords_${coinUser.id}`, JSON.stringify(storedPw));
-        setReplayPasswords((prev) => ({ ...prev, [coinShowTarget.id]: result.replay_password }));
-      }
-      if (result.access_password) {
-        const storedAp = JSON.parse(localStorage.getItem(`access_passwords_${coinUser.id}`) || "{}");
-        storedAp[coinShowTarget.id] = result.access_password;
-        localStorage.setItem(`access_passwords_${coinUser.id}`, JSON.stringify(storedAp));
-        setAccessPasswords((prev) => ({ ...prev, [coinShowTarget.id]: result.access_password }));
-      }
+    if (coinUser && result.token_code) {
+      addRedeemedToken(coinShowTarget.id, result.token_code);
+      if (result.replay_password) addReplayPassword(coinShowTarget.id, result.replay_password);
+      if (result.access_password) addAccessPassword(coinShowTarget.id, result.access_password);
     }
   };
 

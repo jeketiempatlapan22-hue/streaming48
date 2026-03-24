@@ -9,16 +9,17 @@ import type { Show } from "@/types/show";
 import ShowCard from "@/components/viewer/ShowCard";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { usePurchasedShows } from "@/hooks/usePurchasedShows";
 
 const SchedulePage = () => {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [settings, setSettings] = useState<{ whatsapp_number: string }>({ whatsapp_number: "" });
-  const [coinUser, setCoinUser] = useState<any>(null);
-  const [redeemedTokens, setRedeemedTokens] = useState<Record<string, string>>({});
-  const [accessPasswords, setAccessPasswords] = useState<Record<string, string>>({});
-  const [replayPasswords, setReplayPasswords] = useState<Record<string, string>>({});
+  const {
+    coinUser, redeemedTokens, accessPasswords, replayPasswords,
+    addRedeemedToken, addAccessPassword,
+  } = usePurchasedShows();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,16 +56,7 @@ const SchedulePage = () => {
       setLoading(false);
     };
     fetchData();
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCoinUser(session.user);
-        try { setRedeemedTokens(JSON.parse(localStorage.getItem(`redeemed_tokens_${session.user.id}`) || "{}")); } catch {}
-        try { setAccessPasswords(JSON.parse(localStorage.getItem(`access_passwords_${session.user.id}`) || "{}")); } catch {}
-        try { setReplayPasswords(JSON.parse(localStorage.getItem(`replay_passwords_${session.user.id}`) || "{}")); } catch {}
-      }
-    };
-    checkAuth();
+    // Auth & purchase state now handled by usePurchasedShows hook
     const ch = supabase.channel("sched-shows").on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => fetchData()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -80,10 +72,8 @@ const SchedulePage = () => {
     const result = data as any;
     if (error || !result?.success) { toast.error(result?.error || "Gagal"); return; }
     toast.success(`Token: ${result.token_code}`);
-    const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${coinUser.id}`) || "{}");
-    stored[show.id] = result.token_code;
-    localStorage.setItem(`redeemed_tokens_${coinUser.id}`, JSON.stringify(stored));
-    setRedeemedTokens(prev => ({ ...prev, [show.id]: result.token_code }));
+    addRedeemedToken(show.id, result.token_code);
+    if (result.access_password) addAccessPassword(show.id, result.access_password);
   };
 
   const filteredShows = shows.filter(s => {
