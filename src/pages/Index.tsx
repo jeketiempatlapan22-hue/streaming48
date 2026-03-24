@@ -143,8 +143,8 @@ const Index = () => {
         supabase.from("coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
         supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
       ]);
-      setCoinBalance(balRes.data?.balance || 0);
-      setCoinUsername(profileRes.data?.username || user.user_metadata?.username || "");
+      setCoinBalance(balRes.status === "fulfilled" ? (balRes.value.data?.balance || 0) : 0);
+      setCoinUsername(profileRes.status === "fulfilled" ? (profileRes.value.data?.username || user.user_metadata?.username || "") : "");
 
       try {
         const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${user.id}`) || "{}");
