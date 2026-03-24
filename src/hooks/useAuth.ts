@@ -109,11 +109,15 @@ export const useAuth = () => {
     await supabase.auth.signOut();
     cachedUser = null;
     cachedIsAdmin = false;
+    cachedIsBanned = false;
+    cachedBanReason = "";
     cacheReady = false;
     adminCheckRef.current = null;
     setUser(null);
     setIsAdmin(false);
+    setIsBanned(false);
+    setBanReason("");
   };
 
-  return { user, isAdmin, loading, signOut };
+  return { user, isAdmin, isBanned, banReason, loading, signOut };
 };
