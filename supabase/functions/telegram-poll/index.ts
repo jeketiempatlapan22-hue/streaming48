@@ -1017,20 +1017,31 @@ async function processCallbackQuery(supabase: any, botToken: string, chatId: str
 
     // Edit the original message to show result and remove buttons
     if (messageId) {
-      const originalText = cb.message?.text || cb.message?.caption || '';
-      const updatedText = originalText + `\n\n${resultText}`;
-      
-      // Try editMessageCaption first (for photo messages), fallback to editMessageText
-      if (cb.message?.photo) {
-        await fetch(`${TELEGRAM_API}${botToken}/editMessageCaption`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, message_id: messageId, caption: updatedText, reply_markup: { inline_keyboard: [] } }),
-        });
-      } else {
-        await fetch(`${TELEGRAM_API}${botToken}/editMessageText`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: updatedText, reply_markup: { inline_keyboard: [] } }),
-        });
+      try {
+        // Strip MarkdownV2 escapes from result for clean display
+        const cleanResult = resultText.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
+        
+        if (cb.message?.photo) {
+          // For photo messages, get original caption and append result (no parse_mode to avoid MarkdownV2 issues)
+          const originalCaption = cb.message?.caption || '';
+          // Strip MarkdownV2 from original caption too
+          const cleanCaption = originalCaption.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
+          await fetch(`${TELEGRAM_API}${botToken}/editMessageCaption`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, caption: cleanCaption + `\n\n${cleanResult}`, reply_markup: { inline_keyboard: [] } }),
+          });
+        } else {
+          const originalText = cb.message?.text || '';
+          const cleanText = originalText.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
+          await fetch(`${TELEGRAM_API}${botToken}/editMessageText`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: cleanText + `\n\n${cleanResult}`, reply_markup: { inline_keyboard: [] } }),
+          });
+        }
+      } catch (editErr) {
+        console.warn('Failed to edit message:', editErr);
+        // Still send result as separate message
+        await sendTelegramMessage(botToken, chatId, escapeMarkdown(resultText));
       }
     }
 
