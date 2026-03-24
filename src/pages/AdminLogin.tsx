@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { checkClientRateLimit, getRateLimitRemaining } from "@/lib/rateLimiter";
 import { withRetry, withTimeout } from "@/lib/queryCache";
+import { recordAuthMetric } from "@/lib/authMetrics";
 import logo from "@/assets/logo.png";
 
 const AdminLogin = () => {
