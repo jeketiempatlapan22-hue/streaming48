@@ -99,6 +99,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limit: max 30 requests per minute per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (!edgeRL(`landing:${ip}`, 30, 60_000)) {
+      return new Response(JSON.stringify({ error: 'Rate limited' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const url = new URL(req.url);
     const endpoint = url.searchParams.get("type") || "landing";
     const sb = getSupabase();
