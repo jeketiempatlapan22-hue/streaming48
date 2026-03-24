@@ -334,8 +334,15 @@ const TokenFactory = () => {
                 </div>
               </div>
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(t.code)} title="Copy link">
-                  <Copy className="h-3 w-3" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => copyLink(t.code)}
+                  title={copiedTokens.has(t.code) ? "Sudah disalin" : "Copy link"}
+                  disabled={copiedTokens.has(t.code)}
+                >
+                  {copiedTokens.has(t.code) ? <CheckCircle className="h-3 w-3 text-muted-foreground" /> : <Copy className="h-3 w-3" />}
                 </Button>
                 {!t.is_public && (
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => resetSessions(t.id)} title="Reset session">
