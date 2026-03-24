@@ -8,8 +8,8 @@ const ViewerBroadcast = () => {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Fetch latest unread broadcast
-    const fetchLatest = async () => {
+    // Delay broadcast fetch to reduce initial DB load
+    const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("admin_notifications")
         .select("*")
@@ -20,8 +20,7 @@ const ViewerBroadcast = () => {
       if (data && !dismissed.has(data.id)) {
         setNotification(data);
       }
-    };
-    fetchLatest();
+    }, 1000);
 
     // Listen for new broadcasts in real-time
     const ch = supabase
