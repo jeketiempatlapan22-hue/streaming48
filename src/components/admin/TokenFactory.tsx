@@ -23,7 +23,7 @@ const TokenFactory = () => {
   const [coinTokens, setCoinTokens] = useState<any[]>([]);
   const [sessions, setSessions] = useState<Record<string, number>>({});
   const [duration, setDuration] = useState<DurationKey>("daily");
-  const [customHours, setCustomHours] = useState("24");
+  const [customDays, setCustomDays] = useState("3");
   const [maxDevices, setMaxDevices] = useState("1");
   const [bulkCount, setBulkCount] = useState("1");
   const [isPublic, setIsPublic] = useState(false);
