@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Eye, EyeOff, Upload, Image, AlignLeft, AlignCenter, AlignRight, X } from "lucide-react";
+import MediaPickerDialog from "./MediaPickerDialog";
 
 interface Description {
   id: string; title: string; content: string; icon: string; sort_order: number; is_active: boolean; image_url: string; text_align: string;
