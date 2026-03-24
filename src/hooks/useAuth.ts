@@ -6,6 +6,8 @@ import type { User } from "@supabase/supabase-js";
 // In-memory session cache to avoid redundant getSession() calls
 let cachedUser: User | null = null;
 let cachedIsAdmin: boolean = false;
+let cachedIsBanned: boolean = false;
+let cachedBanReason: string = "";
 let cacheReady = false;
 
 async function checkAdminSafe(userId: string): Promise<boolean> {
