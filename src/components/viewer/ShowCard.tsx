@@ -43,36 +43,50 @@ function parseShowDateTime(dateStr: string, timeStr: string): number | null {
 }
 
 function useCountdown(dateStr: string, timeStr: string) {
-  const [text, setText] = useState("");
-  const [now, setNow] = useState(Date.now());
+  const [parts, setParts] = useState<{ d: number; h: number; m: number; s: number; live: boolean } | null>(null);
 
   useEffect(() => {
     const target = parseShowDateTime(dateStr, timeStr);
     if (!target) return;
     const update = () => {
-      const current = Date.now();
-      setNow(current);
-      const diff = target - current;
-      if (diff <= 0) { setText("LIVE!"); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setText(d > 0 ? `${d}h ${h}j ${m}m` : `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
+      const diff = target - Date.now();
+      if (diff <= 0) { setParts({ d: 0, h: 0, m: 0, s: 0, live: true }); return; }
+      setParts({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        live: false,
+      });
     };
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [dateStr, timeStr]);
 
-  return { text, now };
+  return parts;
 }
+
+const CountdownDigit = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <motion.div
+      key={value}
+      initial={{ rotateX: -90, opacity: 0 }}
+      animate={{ rotateX: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 backdrop-blur-sm border border-primary/20"
+    >
+      <span className="font-mono text-sm font-bold text-primary">{value.toString().padStart(2, "0")}</span>
+    </motion.div>
+    <span className="mt-0.5 text-[8px] uppercase tracking-wider text-muted-foreground">{label}</span>
+  </div>
+);
 
 const ShowCard = ({
   show, index, isReplayMode, redeemedToken, accessPassword, replayPassword,
   onBuy, onCoinBuy, showCountdown = true,
 }: ShowCardProps) => {
-  const { text: countdown, now: currentTime } = useCountdown(show.schedule_date, show.schedule_time);
+  const countdown = useCountdown(show.schedule_date, show.schedule_time);
   const pw = accessPassword || replayPassword;
   const hasPw = pw && pw !== "__purchased__";
 
@@ -99,12 +113,37 @@ const ShowCard = ({
         {/* Category badge removed from image overlay - now in content section */}
 
         {/* Countdown badge - hide for replay shows */}
-        {showCountdown && countdown && !show.is_replay && (
-          <div className="absolute top-3 right-3 rounded-lg bg-background/80 backdrop-blur-sm px-2.5 py-1.5 text-center">
-            <Timer className="mx-auto mb-0.5 h-3 w-3 text-primary" />
-            <p className={`font-mono text-[10px] font-bold ${countdown === "LIVE!" ? "text-destructive animate-pulse" : "text-primary"}`}>
-              {countdown}
-            </p>
+        {showCountdown && countdown && !countdown.live && !show.is_replay && (
+          <div className="absolute top-3 right-3 rounded-xl bg-background/90 backdrop-blur-md px-3 py-2 shadow-lg border border-primary/10">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Timer className="h-3 w-3 text-primary animate-pulse" />
+              <span className="text-[8px] uppercase tracking-widest text-muted-foreground font-semibold">Mulai dalam</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {countdown.d > 0 && (
+                <>
+                  <CountdownDigit value={countdown.d} label="Hari" />
+                  <span className="text-primary/40 font-bold text-xs pb-3">:</span>
+                </>
+              )}
+              <CountdownDigit value={countdown.h} label="Jam" />
+              <span className="text-primary/40 font-bold text-xs pb-3">:</span>
+              <CountdownDigit value={countdown.m} label="Min" />
+              <span className="text-primary/40 font-bold text-xs pb-3">:</span>
+              <CountdownDigit value={countdown.s} label="Det" />
+            </div>
+          </div>
+        )}
+        {showCountdown && countdown?.live && !show.is_replay && (
+          <div className="absolute top-3 right-3">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 shadow-lg shadow-destructive/30"
+            >
+              <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+              <span className="text-xs font-bold text-destructive-foreground">LIVE!</span>
+            </motion.div>
           </div>
         )}
 
@@ -164,7 +203,7 @@ const ShowCard = ({
           {redeemedToken && accessPassword && (() => {
             const showStart = parseShowDateTime(show.schedule_date, show.schedule_time);
             const accessOpens = showStart ? showStart - 2 * 60 * 60 * 1000 : null;
-            const tooEarly = accessOpens ? currentTime < accessOpens : false;
+            const tooEarly = accessOpens ? Date.now() < accessOpens : false;
             if (tooEarly) return null;
             return (
               <div className="rounded-xl border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/10 p-3 text-center">
@@ -206,13 +245,18 @@ const ShowCard = ({
                 {(() => {
                   const showStart = parseShowDateTime(show.schedule_date, show.schedule_time);
                   const accessOpens = showStart ? showStart - 2 * 60 * 60 * 1000 : null;
-                  const isTooEarly = accessOpens ? currentTime < accessOpens : false;
+                  const isTooEarly = accessOpens ? Date.now() < accessOpens : false;
 
                   if (isTooEarly && showStart) {
+                    const countdownText = countdown
+                      ? countdown.d > 0
+                        ? `${countdown.d}h ${countdown.h}j ${countdown.m}m`
+                        : `${countdown.h.toString().padStart(2,"0")}:${countdown.m.toString().padStart(2,"0")}:${countdown.s.toString().padStart(2,"0")}`
+                      : "";
                     return (
                       <div className="rounded-xl border border-muted bg-muted/50 p-4 text-center space-y-2">
                         <p className="text-xs font-medium text-muted-foreground">⏳ Menunggu Live Streaming</p>
-                        <p className="font-mono text-2xl font-bold text-primary">{countdown}</p>
+                        <p className="font-mono text-2xl font-bold text-primary">{countdownText}</p>
                         <p className="text-[10px] text-muted-foreground">{show.schedule_date} • {show.schedule_time}</p>
                         <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-3 text-sm font-semibold text-muted-foreground/50 cursor-not-allowed">
                           <Radio className="h-4 w-4" /> Menunggu Live...
