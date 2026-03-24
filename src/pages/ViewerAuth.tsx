@@ -92,6 +92,7 @@ const ViewerAuth = () => {
     };
 
     try {
+      const authStart = performance.now();
       if (mode === "signup") {
         const signupResult = await runWithTimeoutRetry(
           () => supabase.auth.signUp({ email: authEmail, password, options: { data: { username: username.trim() } } }),
@@ -100,10 +101,13 @@ const ViewerAuth = () => {
         );
 
         if (signupResult.error) {
+          const ms = Math.round(performance.now() - authStart);
           const msg = String(signupResult.error?.message || "Gagal daftar");
           const isTimeout = /timeout|timed out|deadline exceeded|upstream request timeout/i.test(msg);
+          recordAuthMetric(isTimeout ? "signup_timeout" : "signup_error", ms, "viewer", msg);
           toast.error(isTimeout ? "Server sedang sibuk, coba lagi sebentar." : (msg.includes("already registered") ? "Sudah terdaftar." : msg));
         } else {
+          recordAuthMetric("signup_success", Math.round(performance.now() - authStart), "viewer");
           toast.success("Berhasil!");
           if (refCode) await claimReferral(refCode);
           navigate("/coins");
