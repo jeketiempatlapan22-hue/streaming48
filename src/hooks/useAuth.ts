@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkBanStatus } from "@/lib/suspiciousActivity";
 import type { User } from "@supabase/supabase-js";
 
 // In-memory session cache to avoid redundant getSession() calls
