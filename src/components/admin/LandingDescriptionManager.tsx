@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Eye, EyeOff, Upload, Image, AlignLeft, AlignCenter, AlignRight, X } from "lucide-react";
+import MediaPickerDialog from "./MediaPickerDialog";
 
 interface Description {
   id: string; title: string; content: string; icon: string; sort_order: number; is_active: boolean; image_url: string; text_align: string;
@@ -14,8 +15,7 @@ interface Description {
 const LandingDescriptionManager = () => {
   const [items, setItems] = useState<Description[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [showGallery, setShowGallery] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryTargetId, setGalleryTargetId] = useState<string | null>(null);
 
   // Layout settings
@@ -31,13 +31,6 @@ const LandingDescriptionManager = () => {
     setItems((data as any[]) || []);
   };
 
-  const fetchGallery = async () => {
-    const { data } = await supabase.storage.from("show-images").list("", { limit: 100 });
-    if (data) {
-      const urls = data.filter((f) => !f.name.startsWith(".")).map((f) => supabase.storage.from("show-images").getPublicUrl(f.name).data.publicUrl);
-      setGalleryImages(urls);
-    }
-  };
 
   const fetchSettings = async () => {
     const { data } = await supabase.from("site_settings").select("*").in("key", ["landing_desc_layout", "landing_description_width", "landing_desc_title", "landing_desc_subtitle", "landing_desc_quote"]);
@@ -52,7 +45,7 @@ const LandingDescriptionManager = () => {
     }
   };
 
-  useEffect(() => { fetchItems(); fetchGallery(); fetchSettings(); }, []);
+  useEffect(() => { fetchItems(); fetchSettings(); }, []);
 
   const saveSetting = async (key: string, value: string) => {
     await supabase.from("site_settings").upsert({ key, value } as any, { onConflict: "key" });
@@ -84,7 +77,7 @@ const LandingDescriptionManager = () => {
     const url = supabase.storage.from("show-images").getPublicUrl(fileName).data.publicUrl;
     const item = items.find((i) => i.id === itemId);
     if (item) { const updated = { ...item, image_url: url }; setItems(items.map((i) => i.id === itemId ? updated : i)); await update(updated); }
-    await fetchGallery();
+    
     setUploading(false);
   };
 
@@ -92,7 +85,7 @@ const LandingDescriptionManager = () => {
     if (!galleryTargetId) return;
     const item = items.find((i) => i.id === galleryTargetId);
     if (item) { const updated = { ...item, image_url: url }; setItems(items.map((i) => i.id === galleryTargetId ? updated : i)); await update(updated); }
-    setShowGallery(false); setGalleryTargetId(null);
+    setGalleryTargetId(null);
   };
 
   return (
@@ -175,7 +168,7 @@ const LandingDescriptionManager = () => {
                   <Upload className="h-3 w-3" /> Upload
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadImage(file, item.id); }} />
                 </label>
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setGalleryTargetId(item.id); setShowGallery(true); }}><Image className="mr-1 h-3 w-3" /> Galeri</Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setGalleryTargetId(item.id); setGalleryOpen(true); }}><Image className="mr-1 h-3 w-3" /> Galeri</Button>
                 {item.image_url && (
                   <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => { const u = { ...item, image_url: "" }; setItems(items.map((i) => i.id === u.id ? u : i)); update(u); }}><X className="mr-1 h-3 w-3" /> Hapus</Button>
                 )}
@@ -188,22 +181,7 @@ const LandingDescriptionManager = () => {
       </div>
       {uploading && <p className="text-xs text-primary">Mengupload...</p>}
 
-      {showGallery && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="mx-4 max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">📸 Galeri Foto</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowGallery(false)}>Tutup</Button>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {galleryImages.map((url) => (
-                <img key={url} src={url} alt="" className="h-28 w-full cursor-pointer rounded-lg object-cover transition hover:ring-2 hover:ring-primary" onClick={() => selectFromGallery(url)} />
-              ))}
-            </div>
-            {galleryImages.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Belum ada foto</p>}
-          </div>
-        </div>
-      )}
+      <MediaPickerDialog open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={selectFromGallery} />
     </div>
   );
 };
