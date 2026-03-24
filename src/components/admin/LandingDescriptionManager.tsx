@@ -31,13 +31,6 @@ const LandingDescriptionManager = () => {
     setItems((data as any[]) || []);
   };
 
-  const fetchGallery = async () => {
-    const { data } = await supabase.storage.from("show-images").list("", { limit: 100 });
-    if (data) {
-      const urls = data.filter((f) => !f.name.startsWith(".")).map((f) => supabase.storage.from("show-images").getPublicUrl(f.name).data.publicUrl);
-      setGalleryImages(urls);
-    }
-  };
 
   const fetchSettings = async () => {
     const { data } = await supabase.from("site_settings").select("*").in("key", ["landing_desc_layout", "landing_description_width", "landing_desc_title", "landing_desc_subtitle", "landing_desc_quote"]);
