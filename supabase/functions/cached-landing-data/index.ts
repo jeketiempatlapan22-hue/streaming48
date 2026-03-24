@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=20, stale-while-revalidate=40",
+        "Cache-Control": "public, max-age=25, stale-while-revalidate=60",
       },
     });
   } catch (err: any) {
