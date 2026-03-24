@@ -9,6 +9,7 @@ import type { Show } from "@/types/show";
 import ShowCard from "@/components/viewer/ShowCard";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { usePurchasedShows } from "@/hooks/usePurchasedShows";
 
 const SchedulePage = () => {
   const [shows, setShows] = useState<Show[]>([]);
