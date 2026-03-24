@@ -56,16 +56,7 @@ const SchedulePage = () => {
       setLoading(false);
     };
     fetchData();
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCoinUser(session.user);
-        try { setRedeemedTokens(JSON.parse(localStorage.getItem(`redeemed_tokens_${session.user.id}`) || "{}")); } catch {}
-        try { setAccessPasswords(JSON.parse(localStorage.getItem(`access_passwords_${session.user.id}`) || "{}")); } catch {}
-        try { setReplayPasswords(JSON.parse(localStorage.getItem(`replay_passwords_${session.user.id}`) || "{}")); } catch {}
-      }
-    };
-    checkAuth();
+    // Auth & purchase state now handled by usePurchasedShows hook
     const ch = supabase.channel("sched-shows").on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => fetchData()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
