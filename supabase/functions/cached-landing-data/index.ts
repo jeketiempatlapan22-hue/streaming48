@@ -14,6 +14,18 @@ const LANDING_TTL = 30_000;
 const SHOWS_TTL = 20_000;
 const STATS_TTL = 60_000;
 
+// In-memory rate limiter
+const rlMap = new Map<string, { count: number; resetAt: number }>();
+function edgeRL(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const e = rlMap.get(key);
+  if (rlMap.size > 2000) { for (const [k, v] of rlMap) { if (now > v.resetAt) rlMap.delete(k); } }
+  if (!e || now > e.resetAt) { rlMap.set(key, { count: 1, resetAt: now + windowMs }); return true; }
+  if (e.count >= max) return false;
+  e.count++;
+  return true;
+}
+
 function getSupabase() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -87,6 +99,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limit: max 30 requests per minute per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (!edgeRL(`landing:${ip}`, 30, 60_000)) {
+      return new Response(JSON.stringify({ error: 'Rate limited' }), {
+        status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const url = new URL(req.url);
     const endpoint = url.searchParams.get("type") || "landing";
     const sb = getSupabase();

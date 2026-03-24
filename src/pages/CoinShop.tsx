@@ -10,10 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import SharedNavbar from "@/components/SharedNavbar";
+import BannedScreen from "@/components/viewer/BannedScreen";
+import { useProtectedAuth } from "@/hooks/useProtectedAuth";
 
 interface CoinPackage { id: string; name: string; coin_amount: number; price: string; qris_image_url: string | null; }
 
 const CoinShop = () => {
+  const { isBanned, banReason, signOut } = useProtectedAuth();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
   const [balance, setBalance] = useState(0);
@@ -171,6 +174,7 @@ const CoinShop = () => {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><img src={logo} alt="Loading" className="h-12 w-12 animate-pulse rounded-full" /></div>;
+  if (isBanned) return <BannedScreen reason={banReason} onSignOut={signOut} />;
 
   return (
     <div className="min-h-screen bg-background">

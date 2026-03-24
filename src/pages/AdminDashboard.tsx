@@ -30,6 +30,7 @@ const UserManager = lazy(() => import("@/components/admin/UserManager"));
 const AdminBroadcast = lazy(() => import("@/components/admin/AdminBroadcast"));
 const MediaLibrary = lazy(() => import("@/components/admin/MediaLibrary"));
 const AdminAuthMetrics = lazy(() => import("@/components/admin/AdminAuthMetrics"));
+const AdminTrafficMonitor = lazy(() => import("@/components/admin/AdminTrafficMonitor"));
 
 /** Safe race: returns result or fallback after timeout */
 async function raceTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -193,6 +194,7 @@ const AdminDashboard = () => {
       case "users": return <UserManager />;
       case "media": return <MediaLibrary />;
       case "auth-metrics": return <AdminAuthMetrics />;
+      case "traffic": return <AdminTrafficMonitor />;
       default: return <LiveControl />;
     }
   };

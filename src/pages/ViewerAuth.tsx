@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift } from "lucide-react";
 import { checkClientRateLimit, getRateLimitRemaining } from "@/lib/rateLimiter";
 import { recordAuthMetric } from "@/lib/authMetrics";
+import { trackFailedLogin } from "@/lib/suspiciousDetector";
 
 type AuthMethod = "phone" | "email";
 const TRANSIENT_AUTH_ERROR = /timeout|timed out|deadline|504|500|failed to fetch|networkerror|network request failed|load failed|connection/i;
@@ -175,6 +176,7 @@ const ViewerAuth = () => {
           const msg = String(result.error?.message || "Login gagal");
           const isTimeout = TRANSIENT_AUTH_ERROR.test(msg);
           recordAuthMetric(isTimeout ? "login_timeout" : "login_error", ms, "viewer", msg);
+          trackFailedLogin();
           toast.error(isTimeout ? "Server sedang sibuk, coba lagi sebentar." : "Nomor/email atau password salah.");
         } else {
           recordAuthMetric("login_success", ms, "viewer");

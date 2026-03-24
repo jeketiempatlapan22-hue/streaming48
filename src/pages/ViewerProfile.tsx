@@ -7,10 +7,13 @@ import { withTimeout } from "@/lib/queryCache";
 import { ArrowLeft, Coins, Save, User, History, BarChart3, Shield, Ticket, Key, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import BannedScreen from "@/components/viewer/BannedScreen";
+import { useProtectedAuth } from "@/hooks/useProtectedAuth";
 
 const ReferralSection = lazy(() => import("@/components/viewer/ReferralSection"));
 
 const ViewerProfile = () => {
+  const { isBanned, banReason, signOut: authSignOut } = useProtectedAuth();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
@@ -89,6 +92,7 @@ const ViewerProfile = () => {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-12 w-12 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center animate-pulse"><Shield className="h-6 w-6 text-primary" /></div></div>;
+  if (isBanned) return <BannedScreen reason={banReason} onSignOut={authSignOut} />;
 
   return (
     <div className="min-h-screen bg-background">
