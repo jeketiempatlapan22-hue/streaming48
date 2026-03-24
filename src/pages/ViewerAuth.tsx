@@ -218,9 +218,19 @@ const ViewerAuth = () => {
           if (isTimeout) {
             toast.error("Server sedang sibuk, coba lagi sebentar.");
           } else if (msg.includes("Invalid login credentials") || msg.includes("invalid_credentials")) {
-            toast.error("Password salah atau akun tidak ditemukan. Periksa kembali nomor HP/email dan password kamu.");
+            const newFail = failCount + 1;
+            setFailCount(newFail);
+            if (newFail >= 3) {
+              setLoginError("Sudah 3x gagal login. Kemungkinan password kamu salah. Gunakan fitur Lupa Password di bawah untuk reset.");
+              toast.error("Password salah. Coba reset password kamu.");
+            } else if (newFail >= 2) {
+              setLoginError("Password salah. Pastikan password yang kamu masukkan benar, atau gunakan Lupa Password.");
+              toast.error("Password salah. Periksa kembali atau reset password.");
+            } else {
+              setLoginError("Password salah atau akun tidak ditemukan.");
+              toast.error("Password salah atau akun tidak ditemukan. Periksa kembali nomor HP/email dan password kamu.");
+            }
           } else if (msg.includes("Email not confirmed")) {
-            // Edge case: account exists but unconfirmed (shouldn't happen with auto-confirm)
             toast.error("Akun belum diverifikasi. Coba daftar ulang dengan nomor/email yang sama.");
             setMode("signup");
           } else {
