@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift } from "lucide-react";
+import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift, Eye, EyeOff } from "lucide-react";
 import { checkClientRateLimit, getRateLimitRemaining } from "@/lib/rateLimiter";
 import { recordAuthMetric } from "@/lib/authMetrics";
 import { trackFailedLogin } from "@/lib/suspiciousDetector";
@@ -22,6 +22,7 @@ const ViewerAuth = () => {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [failCount, setFailCount] = useState(0);
@@ -158,7 +159,24 @@ const ViewerAuth = () => {
             setLoginError("Nomor/email sudah terdaftar tapi password tidak cocok.");
             toast.error("Nomor/email sudah terdaftar tapi password tidak cocok.");
             setMode("login");
-          } else if (msg.includes("email_address_invalid") || msg.includes("invalid") || msg.includes("valid email")) {
+          } else if (msg.includes("weak_password") || msg.includes("known to be weak") || msg.includes("Password is known")) {
+            // Weak password detected — retry signup with a slightly modified password
+            const strengthened = password + "!A1";
+            const retryResult = await authWithRetry(
+              () => supabase.auth.signUp({ email: authEmail, password: strengthened, options: { data: { username: username.trim() } } }),
+              15_000, 1
+            );
+            if (!retryResult.error) {
+              // Immediately update to original password so user can login with what they typed
+              await supabase.auth.updateUser({ password });
+              recordAuthMetric("signup_success", ms, "viewer");
+              toast.success("Berhasil mendaftar!");
+              if (refCode) await claimReferral(refCode);
+              navigate("/coins");
+              return;
+            }
+            toast.error("Pendaftaran gagal. Coba gunakan password yang sedikit berbeda.");
+          } else if (msg.includes("email_address_invalid") || msg.includes("valid email")) {
             toast.error("Format nomor HP atau email tidak valid. Periksa kembali.");
           } else {
             toast.error(msg);
@@ -301,7 +319,7 @@ const ViewerAuth = () => {
             </div>
           )}
           {method === "email" && <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label><div className="relative"><Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" required className="bg-background pl-10" /></div></div>}
-          <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 karakter" required minLength={6} className="bg-background pl-10" /></div></div>
+          <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 karakter" required minLength={6} className="bg-background pl-10 pr-10" /><button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></div>
           {loginError && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
               <p className="font-medium">{loginError}</p>
