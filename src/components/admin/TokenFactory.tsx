@@ -15,7 +15,7 @@ const DURATION_TABS = [
   { key: "monthly", label: "Bulanan", emoji: "🗓️" },
 ] as const;
 
-type DurationKey = "daily" | "weekly" | "monthly";
+type DurationKey = "daily" | "weekly" | "monthly" | "custom";
 type TabKey = DurationKey | "coin";
 
 const TokenFactory = () => {
