@@ -15,7 +15,7 @@ const DURATION_TABS = [
   { key: "monthly", label: "Bulanan", emoji: "🗓️" },
 ] as const;
 
-type DurationKey = "daily" | "weekly" | "monthly";
+type DurationKey = "daily" | "weekly" | "monthly" | "custom";
 type TabKey = DurationKey | "coin";
 
 const TokenFactory = () => {
@@ -23,12 +23,13 @@ const TokenFactory = () => {
   const [coinTokens, setCoinTokens] = useState<any[]>([]);
   const [sessions, setSessions] = useState<Record<string, number>>({});
   const [duration, setDuration] = useState<DurationKey>("daily");
+  const [customHours, setCustomHours] = useState("24");
   const [maxDevices, setMaxDevices] = useState("1");
   const [bulkCount, setBulkCount] = useState("1");
   const [isPublic, setIsPublic] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<TabKey, Set<string>>>({
-    daily: new Set(), weekly: new Set(), monthly: new Set(), coin: new Set(),
+    daily: new Set(), weekly: new Set(), monthly: new Set(), custom: new Set(), coin: new Set(),
   });
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "blocked" | "expired">("all");
   const [activeTab, setActiveTab] = useState<TabKey>("daily");
@@ -64,23 +65,41 @@ const TokenFactory = () => {
     setGenerating(true);
     const now = new Date();
     let expiresAt: Date;
-    if (duration === "daily") expiresAt = new Date(now.getTime() + 86400000);
-    else if (duration === "weekly") expiresAt = new Date(now.getTime() + 604800000);
-    else expiresAt = new Date(now.getTime() + 2592000000);
+    let durationLabel: string;
+    if (duration === "custom") {
+      const hours = Math.max(1, Math.min(8760, parseInt(customHours) || 24));
+      expiresAt = new Date(now.getTime() + hours * 3600000);
+      durationLabel = `${hours} jam`;
+    } else if (duration === "daily") {
+      expiresAt = new Date(now.getTime() + 86400000);
+      durationLabel = "1 hari";
+    } else if (duration === "weekly") {
+      expiresAt = new Date(now.getTime() + 604800000);
+      durationLabel = "7 hari";
+    } else {
+      expiresAt = new Date(now.getTime() + 2592000000);
+      durationLabel = "30 hari";
+    }
+
+    const storedDuration = duration === "custom" ? "daily" : duration;
 
     const rows = Array.from({ length: count }, () => ({
       code: `rt48_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
       max_devices: isPublic ? 9999 : parseInt(maxDevices),
-      duration_type: duration,
+      duration_type: storedDuration,
       expires_at: expiresAt.toISOString(),
       is_public: isPublic,
     }));
 
-    await supabase.from("tokens").insert(rows);
+    const { error } = await supabase.from("tokens").insert(rows);
+    if (error) {
+      toast({ title: "Gagal membuat token", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `${count} token berhasil dibuat! (durasi: ${durationLabel})` });
+    }
     await fetchTokens();
-    toast({ title: `${count} token berhasil dibuat!` });
     setGenerating(false);
-    setActiveTab(duration);
+    setActiveTab(storedDuration as TabKey);
   };
 
   const markAsCopied = (code: string) => {
@@ -343,9 +362,24 @@ const TokenFactory = () => {
               <SelectItem value="daily">1 Hari</SelectItem>
               <SelectItem value="weekly">7 Hari</SelectItem>
               <SelectItem value="monthly">30 Hari</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        {duration === "custom" && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Durasi (jam)</label>
+            <Input
+              type="number"
+              min="1"
+              max="8760"
+              value={customHours}
+              onChange={(e) => setCustomHours(e.target.value)}
+              className="w-24 bg-background"
+              placeholder="24"
+            />
+          </div>
+        )}
         {!isPublic && (
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Max Device</label>
