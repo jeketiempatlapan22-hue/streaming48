@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { withTimeout } from "@/lib/queryCache";
+import { withTimeout, cachedQuery, fetchCachedEndpoint } from "@/lib/queryCache";
 import { Coins, Upload, CheckCircle, ArrowLeft, Ticket, Copy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
