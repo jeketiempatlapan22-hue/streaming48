@@ -119,11 +119,7 @@ const ReplayPage = () => {
     }
     setReplayResult({ replay_password: result.replay_password, remaining_balance: result.remaining_balance });
     setCoinBalance(result.remaining_balance);
-
-    const stored = JSON.parse(localStorage.getItem(`replay_passwords_${coinUser.id}`) || "{}");
-    stored[purchaseShow.id] = result.replay_password;
-    localStorage.setItem(`replay_passwords_${coinUser.id}`, JSON.stringify(stored));
-    setReplayPasswords((prev) => ({ ...prev, [purchaseShow.id]: result.replay_password }));
+    addReplayPassword(purchaseShow.id, result.replay_password);
   };
 
   const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
