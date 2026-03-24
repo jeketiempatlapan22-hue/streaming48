@@ -1,26 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LiveViewerCount = ({ isLive }: { isLive: boolean }) => {
   const [count, setCount] = useState(0);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!isLive) { setCount(0); return; }
 
-    // Subscribe to the same "online-users" channel as LiveChat but READ-ONLY
-    // Do NOT call channel.track() — we only want to observe live viewers, not add ourselves
-    const channel = supabase.channel("online-users");
+    // Use a unique channel name with random suffix to avoid conflicts
+    // with other components subscribing to the same presence channel
+    const channelName = `online-users-viewer-${Math.random().toString(36).slice(2, 8)}`;
+    const channel = supabase.channel(channelName);
+    channelRef.current = channel;
 
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         setCount(Object.keys(state).length);
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          // Track this viewer so they show up in the count
+          await channel.track({ user: crypto.randomUUID().slice(0, 8), online_at: new Date().toISOString() });
+        }
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      channelRef.current = null;
+      supabase.removeChannel(channel);
+    };
   }, [isLive]);
 
   if (!isLive || count === 0) return null;
