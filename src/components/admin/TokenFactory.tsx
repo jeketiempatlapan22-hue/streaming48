@@ -83,7 +83,7 @@ const TokenFactory = () => {
       durationLabel = "30 hari";
     }
 
-    const storedDuration = duration === "custom" ? "daily" : duration;
+    const storedDuration = duration;
 
     const rows = Array.from({ length: count }, () => ({
       code: `rt48_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
