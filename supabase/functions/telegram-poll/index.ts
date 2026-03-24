@@ -542,9 +542,11 @@ async function handleStatusCommand(supabase: any, botToken: string, chatId: stri
 async function processCoinOrder(supabase: any, botToken: string, chatId: string, order: any, action: 'approve' | 'reject', isBulk: boolean): Promise<{ success: boolean; message: string }> {
   try {
     const sid = order.short_id || order.id.substring(0, 6);
+    console.log(`processCoinOrder: ${action} order ${sid}, isBulk=${isBulk}`);
     if (action === 'approve') {
       // Use atomic RPC to prevent double-credit race conditions
       const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_coin_order', { _order_id: order.id });
+      console.log('confirm_coin_order RPC result:', JSON.stringify(rpcResult), 'error:', rpcError?.message);
       const parsedRpcResult = typeof rpcResult === 'string'
         ? (() => { try { return JSON.parse(rpcResult); } catch { return null; } })()
         : rpcResult;
@@ -575,6 +577,7 @@ async function processCoinOrder(supabase: any, botToken: string, chatId: string,
     }
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : 'Unknown';
+    console.error('processCoinOrder error:', errMsg);
     await sendTelegramMessage(botToken, chatId, `⚠️ Error: ${escapeMarkdown(errMsg)}`);
     return { success: false, message: errMsg };
   }
