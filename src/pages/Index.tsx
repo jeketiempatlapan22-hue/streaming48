@@ -131,49 +131,7 @@ const Index = () => {
     };
     window.addEventListener("beforeinstallprompt", installHandler);
     window.addEventListener("appinstalled", () => setIsStandalone(true));
-    const fetchCoinUser = async () => {
-      const { data: { session } } = await Promise.race([
-        supabase.auth.getSession(),
-        new Promise<{ data: { session: null } }>((r) => setTimeout(() => r({ data: { session: null } }), 5000)),
-      ]).catch(() => ({ data: { session: null } }));
-      const user = session?.user;
-      if (!user) return;
-      setCoinUser(user);
-      const [balRes, profileRes] = await Promise.allSettled([
-        supabase.from("coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
-        supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
-      ]);
-      setCoinBalance(balRes.status === "fulfilled" ? (balRes.value.data?.balance || 0) : 0);
-      setCoinUsername(profileRes.status === "fulfilled" ? (profileRes.value.data?.username || user.user_metadata?.username || "") : "");
-
-      try {
-        const stored = JSON.parse(localStorage.getItem(`redeemed_tokens_${user.id}`) || "{}");
-        setRedeemedTokens(stored);
-      } catch {}
-      try {
-        const storedPw = JSON.parse(localStorage.getItem(`replay_passwords_${user.id}`) || "{}");
-        setReplayPasswords(storedPw);
-      } catch {}
-      try {
-        const storedAp = JSON.parse(localStorage.getItem(`access_passwords_${user.id}`) || "{}");
-        setAccessPasswords(storedAp);
-      } catch {}
-
-      const balCh = supabase
-        .channel(`idx-balance-${user.id}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "coin_balances", filter: `user_id=eq.${user.id}` }, (payload: any) => {
-          if (payload.new?.balance !== undefined) {
-            const oldBal = payload.old?.balance ?? 0;
-            const newBal = payload.new.balance;
-            setCoinBalance(newBal);
-            if (newBal > oldBal) toast.success(`+${newBal - oldBal} koin telah masuk! Saldo: ${newBal}`);
-          }
-        })
-        .subscribe();
-
-      return () => { supabase.removeChannel(balCh); };
-    };
-    const cleanupBalance = fetchCoinUser();
+    // Coin user state is now managed by usePurchasedShows hook
 
     // Single combined realtime channel instead of 4 separate ones — reduces DB connections
     const realtimeCh = supabase.channel("idx-combined")
