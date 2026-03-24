@@ -152,7 +152,6 @@ const Index = () => {
     return () => {
       supabase.removeChannel(realtimeCh);
       clearInterval(settingsPoll);
-      cleanupBalance.then((cleanup) => cleanup?.());
       window.removeEventListener("beforeinstallprompt", installHandler);
     };
   }, []);
