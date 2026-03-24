@@ -44,9 +44,9 @@ async function getLandingData(sb: any) {
   if (landingCache && Date.now() - landingCache.ts < LANDING_TTL) return landingCache.data;
 
   const [settingsRes, descRes, streamRes] = await Promise.all([
-    withTimeout(sb.from("site_settings").select("key, value"), 6000, { data: [] } as any),
-    withTimeout(sb.from("landing_descriptions").select("*").eq("is_active", true).order("sort_order"), 6000, { data: [] } as any),
-    withTimeout(sb.from("streams").select("is_live").limit(1).single(), 6000, { data: null } as any),
+    withTimeout(sb.from("site_settings").select("key, value"), 5000, { data: [] } as any),
+    withTimeout(sb.from("landing_descriptions").select("id, title, content, icon, image_url, text_align, sort_order").eq("is_active", true).order("sort_order"), 5000, { data: [] } as any),
+    withTimeout(sb.from("streams").select("is_live").limit(1).single(), 3000, { data: null } as any),
   ]);
 
   const settings: Record<string, string> = {};
