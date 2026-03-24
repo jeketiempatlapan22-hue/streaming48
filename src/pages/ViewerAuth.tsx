@@ -100,7 +100,7 @@ const ViewerAuth = () => {
     submitRef.current = true;
 
     const rlKey = `viewer-auth-${mode}`;
-    if (!checkClientRateLimit(rlKey, 5, 60_000)) {
+    if (!checkClientRateLimit(rlKey, 8, 60_000)) {
       const remaining = getRateLimitRemaining(rlKey);
       toast.error(`Terlalu banyak percobaan. Tunggu ${remaining} detik.`);
       submitRef.current = false;
@@ -127,7 +127,6 @@ const ViewerAuth = () => {
           recordAuthMetric(isTimeout ? "signup_timeout" : "signup_error", ms, "viewer", msg);
 
           if (isTimeout) {
-            // Server might have created the account anyway — check session
             const sessionCheck = await Promise.race([
               supabase.auth.getSession(),
               new Promise<{ data: { session: null } }>((r) => setTimeout(() => r({ data: { session: null } }), 4000)),
@@ -141,14 +140,48 @@ const ViewerAuth = () => {
               return;
             }
             toast.error("Server sedang sibuk, coba lagi sebentar.");
+          } else if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("User already registered")) {
+            // Auto-try login with the same credentials
+            const loginResult = await authWithRetry(
+              () => supabase.auth.signInWithPassword({ email: authEmail, password }),
+              15_000, 1
+            );
+            if (!loginResult.error && loginResult.data) {
+              recordAuthMetric("login_success", ms, "viewer");
+              toast.success("Akun sudah ada, berhasil login!");
+              navigate("/coins");
+              return;
+            }
+            // Login failed too — switch to login mode
+            toast.error("Nomor/email sudah terdaftar. Password tidak cocok, silakan login ulang.");
+            setMode("login");
           } else {
-            toast.error(msg.includes("already registered") ? "Nomor/email sudah terdaftar. Silakan login." : msg);
+            toast.error(msg);
           }
         } else {
-          recordAuthMetric("signup_success", ms, "viewer");
-          toast.success("Berhasil mendaftar!");
-          if (refCode) await claimReferral(refCode);
-          navigate("/coins");
+          // Check if signup returned a user without session (unconfirmed — shouldn't happen now)
+          const signupData = result.data as any;
+          if (signupData?.user && !signupData?.session) {
+            // Try login immediately (auto-confirm should have confirmed it)
+            const loginRetry = await authWithRetry(
+              () => supabase.auth.signInWithPassword({ email: authEmail, password }),
+              10_000, 1
+            );
+            if (!loginRetry.error) {
+              recordAuthMetric("signup_success", ms, "viewer");
+              toast.success("Berhasil mendaftar!");
+              if (refCode) await claimReferral(refCode);
+              navigate("/coins");
+              return;
+            }
+            toast.success("Akun berhasil dibuat! Silakan login.");
+            setMode("login");
+          } else {
+            recordAuthMetric("signup_success", ms, "viewer");
+            toast.success("Berhasil mendaftar!");
+            if (refCode) await claimReferral(refCode);
+            navigate("/coins");
+          }
         }
       } else {
         // LOGIN
@@ -161,7 +194,6 @@ const ViewerAuth = () => {
         const ms = Math.round(performance.now() - authStart);
 
         if (result.error) {
-          // Even if signIn returned an error, check if session was actually created
           const sessionCheck = await Promise.race([
             supabase.auth.getSession(),
             new Promise<{ data: { session: null } }>((r) => setTimeout(() => r({ data: { session: null } }), 4000)),
@@ -177,7 +209,18 @@ const ViewerAuth = () => {
           const isTimeout = TRANSIENT_AUTH_ERROR.test(msg);
           recordAuthMetric(isTimeout ? "login_timeout" : "login_error", ms, "viewer", msg);
           trackFailedLogin();
-          toast.error(isTimeout ? "Server sedang sibuk, coba lagi sebentar." : "Nomor/email atau password salah.");
+
+          if (isTimeout) {
+            toast.error("Server sedang sibuk, coba lagi sebentar.");
+          } else if (msg.includes("Invalid login credentials") || msg.includes("invalid_credentials")) {
+            toast.error("Password salah atau akun tidak ditemukan. Periksa kembali nomor HP/email dan password kamu.");
+          } else if (msg.includes("Email not confirmed")) {
+            // Edge case: account exists but unconfirmed (shouldn't happen with auto-confirm)
+            toast.error("Akun belum diverifikasi. Coba daftar ulang dengan nomor/email yang sama.");
+            setMode("signup");
+          } else {
+            toast.error(msg);
+          }
         } else {
           recordAuthMetric("login_success", ms, "viewer");
           navigate("/coins");
