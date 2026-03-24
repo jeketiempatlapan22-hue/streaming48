@@ -302,10 +302,20 @@ const ViewerAuth = () => {
           )}
           {method === "email" && <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label><div className="relative"><Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" required className="bg-background pl-10" /></div></div>}
           <div><label className="mb-1 block text-xs font-medium text-muted-foreground">Password</label><div className="relative"><Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 karakter" required minLength={6} className="bg-background pl-10" /></div></div>
+          {loginError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              <p className="font-medium">{loginError}</p>
+              {failCount >= 2 && mode === "login" && (
+                <a href="/forgot-password" className="mt-1.5 inline-flex items-center gap-1 font-bold text-primary hover:underline">
+                  🔑 Reset Password Sekarang
+                </a>
+              )}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={loading || !isFormValid()}>{loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}</Button>
-          <p className="text-center text-xs text-muted-foreground">{mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}<button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")} className="ml-1 font-medium text-primary hover:underline">{mode === "login" ? "Daftar" : "Masuk"}</button></p>
+          <p className="text-center text-xs text-muted-foreground">{mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}<button type="button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setLoginError(""); setFailCount(0); }} className="ml-1 font-medium text-primary hover:underline">{mode === "login" ? "Daftar" : "Masuk"}</button></p>
           {mode === "login" && (
-            <p className="text-center text-xs"><a href="/forgot-password" className="text-muted-foreground hover:text-primary transition-colors">Lupa password?</a></p>
+            <p className="text-center text-xs"><a href="/forgot-password" className={`transition-colors ${failCount >= 2 ? "font-bold text-primary" : "text-muted-foreground hover:text-primary"}`}>Lupa password?</a></p>
           )}
         </form>
         <button onClick={() => navigate("/")} className="mt-4 flex w-full items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Kembali ke Beranda</button>
