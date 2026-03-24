@@ -176,6 +176,7 @@ const ViewerAuth = () => {
           const msg = String(result.error?.message || "Login gagal");
           const isTimeout = TRANSIENT_AUTH_ERROR.test(msg);
           recordAuthMetric(isTimeout ? "login_timeout" : "login_error", ms, "viewer", msg);
+          trackFailedLogin();
           toast.error(isTimeout ? "Server sedang sibuk, coba lagi sebentar." : "Nomor/email atau password salah.");
         } else {
           recordAuthMetric("login_success", ms, "viewer");
