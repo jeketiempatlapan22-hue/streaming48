@@ -25,7 +25,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient();
 
 // 🔧 MAINTENANCE MODE — ubah ke true untuk tutup sementara, false untuk buka kembali
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 const MaintenancePage = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center gap-6">
