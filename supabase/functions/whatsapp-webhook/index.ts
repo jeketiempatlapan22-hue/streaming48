@@ -232,6 +232,8 @@ TIDAK <id> - Tolak order
 /unblocktoken <4digit> - Buka blokir token
 /resettoken <4digit> - Reset sesi token
 /deletetoken <4digit> - Hapus token
+/createtoken <nama/ID> - Buat token untuk show (1 device)
+/createtoken <nama/ID> <max> - Buat token + max device
 
 🔐 *Password Reset:*
 RESET <id> - Setujui reset password
