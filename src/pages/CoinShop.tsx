@@ -47,7 +47,7 @@ const CoinShop = () => {
         setUser(session.user);
 
         const profileRes = await withTimeout(
-          supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle(),
+          (async () => await supabase.from("profiles").select("username").eq("id", session.user.id).maybeSingle())(),
           8_000,
           "Profile timeout"
         ).catch(() => null);
@@ -87,10 +87,10 @@ const CoinShop = () => {
 
   const fetchData = async (userId: string) => {
     const [balRes, pkgRes, txRes, showsRes] = await Promise.allSettled([
-      withTimeout(supabase.from("coin_balances").select("balance").eq("user_id", userId).maybeSingle(), 8_000, "Balance timeout"),
-      withTimeout(supabase.from("coin_packages").select("*").eq("is_active", true).order("sort_order"), 8_000, "Packages timeout"),
-      withTimeout(supabase.from("coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50), 8_000, "Transactions timeout"),
-      withTimeout(supabase.rpc("get_public_shows"), 8_000, "Shows timeout"),
+      withTimeout((async () => await supabase.from("coin_balances").select("balance").eq("user_id", userId).maybeSingle())(), 8_000, "Balance timeout"),
+      withTimeout((async () => await supabase.from("coin_packages").select("*").eq("is_active", true).order("sort_order"))(), 8_000, "Packages timeout"),
+      withTimeout((async () => await supabase.from("coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50))(), 8_000, "Transactions timeout"),
+      withTimeout((async () => await supabase.rpc("get_public_shows"))(), 8_000, "Shows timeout"),
     ]);
 
     setBalance(balRes.status === "fulfilled" ? (balRes.value.data?.balance || 0) : 0);
