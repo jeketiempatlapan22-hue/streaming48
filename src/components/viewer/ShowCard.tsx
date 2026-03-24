@@ -160,18 +160,12 @@ const ShowCard = ({
 
       {/* Content */}
       <div className="space-y-3 p-4">
-        {/* Category info - prominent display */}
-        {show.category && show.category !== "regular" && (() => {
-          const cat = SHOW_CATEGORIES[show.category] || SHOW_CATEGORIES.regular;
-          const memberText = show.category_member && (show.category === "birthday" || show.category === "last_show")
-            ? show.category_member : "";
-          return (
-            <div className={`rounded-xl border px-3 py-2.5 ${cat.color} border-current/20`}>
-              <p className="text-sm font-bold">{cat.label}</p>
-              {memberText && <p className="text-xs opacity-80 mt-0.5">{memberText}</p>}
-            </div>
-          );
-        })()}
+        {/* Category member info */}
+        {show.category && show.category !== "regular" && show.category_member && (
+          <div className={`rounded-lg px-3 py-2 ${(SHOW_CATEGORIES[show.category] || SHOW_CATEGORIES.regular).color}`}>
+            <p className="text-xs font-semibold">{show.category_member}</p>
+          </div>
+        )}
 
         {isReplayMode && show.replay_coin_price > 0 ? (
           <div className="flex items-center gap-1.5 text-sm text-accent">
