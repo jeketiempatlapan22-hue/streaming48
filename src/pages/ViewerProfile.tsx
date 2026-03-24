@@ -13,6 +13,7 @@ import { useProtectedAuth } from "@/hooks/useProtectedAuth";
 const ReferralSection = lazy(() => import("@/components/viewer/ReferralSection"));
 
 const ViewerProfile = () => {
+  const { isBanned, banReason, signOut: authSignOut } = useProtectedAuth();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
