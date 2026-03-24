@@ -32,7 +32,7 @@ const ViewerBroadcast = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(ch); };
+    return () => { supabase.removeChannel(ch); clearTimeout(timer); };
   }, [dismissed]);
 
   const handleDismiss = () => {
