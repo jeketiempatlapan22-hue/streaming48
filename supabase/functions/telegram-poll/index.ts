@@ -453,10 +453,17 @@ async function processBulkOrders(supabase: any, botToken: string, chatId: string
 }
 
 async function processOrderByShortId(supabase: any, botToken: string, chatId: string, shortId: string, action: 'approve' | 'reject'): Promise<string> {
-  const { data: coinOrder } = await supabase.from('coin_orders').select('id, user_id, coin_amount, status, package_id, phone, short_id').eq('short_id', shortId).eq('status', 'pending').maybeSingle();
+  const normalizedId = shortId.trim().toLowerCase();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalizedId);
+
+  let coinQuery = supabase.from('coin_orders').select('id, user_id, coin_amount, status, package_id, phone, short_id').eq('status', 'pending');
+  coinQuery = isUuid ? coinQuery.eq('id', normalizedId) : coinQuery.eq('short_id', normalizedId);
+  const { data: coinOrder } = await coinQuery.maybeSingle();
   if (coinOrder) { await processCoinOrder(supabase, botToken, chatId, coinOrder, action, shortId.length <= 5); return `${action === 'approve' ? '✅' : '❌'} ${escapeMarkdown(shortId)} \\(koin\\)`; }
 
-  const { data: subOrder } = await supabase.from('subscription_orders').select('id, show_id, phone, email, status, short_id').eq('short_id', shortId).eq('status', 'pending').maybeSingle();
+  let subQuery = supabase.from('subscription_orders').select('id, show_id, phone, email, status, short_id').eq('status', 'pending');
+  subQuery = isUuid ? subQuery.eq('id', normalizedId) : subQuery.eq('short_id', normalizedId);
+  const { data: subOrder } = await subQuery.maybeSingle();
   if (subOrder) { await processSubscriptionOrder(supabase, botToken, chatId, subOrder, action, shortId.length <= 5); return `${action === 'approve' ? '✅' : '❌'} ${escapeMarkdown(shortId)} \\(subscription\\)`; }
 
   return `⚠️ ${escapeMarkdown(shortId)} tidak ditemukan`;
@@ -984,17 +991,21 @@ async function processCallbackQuery(supabase: any, botToken: string, chatId: str
     const match = data.match(/^(approve|reject)_(coin|sub)_(.+)$/);
     if (!match) return;
 
-    const [, actionStr, orderType, shortId] = match;
+    const [, actionStr, orderType, rawOrderId] = match;
     const action = actionStr === 'approve' ? 'approve' : 'reject';
+    const orderId = rawOrderId.trim().toLowerCase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId);
 
     let resultText = '';
 
     if (orderType === 'coin') {
-      const { data: coinOrder } = await supabase.from('coin_orders').select('id, user_id, coin_amount, status, package_id, phone, short_id').eq('short_id', shortId).maybeSingle();
+      let coinQuery = supabase.from('coin_orders').select('id, user_id, coin_amount, status, package_id, phone, short_id');
+      coinQuery = isUuid ? coinQuery.eq('id', orderId) : coinQuery.eq('short_id', orderId);
+      const { data: coinOrder } = await coinQuery.maybeSingle();
       if (!coinOrder) {
-        resultText = `⚠️ Order koin ${shortId} tidak ditemukan.`;
+        resultText = `⚠️ Order koin ${orderId} tidak ditemukan.`;
       } else if (coinOrder.status !== 'pending') {
-        resultText = `⚠️ Order koin ${shortId} sudah diproses (${coinOrder.status}).`;
+        resultText = `⚠️ Order koin ${orderId} sudah diproses (${coinOrder.status}).`;
       } else {
         const result = await processCoinOrder(supabase, botToken, chatId, coinOrder, action, true);
         resultText = result.success
@@ -1002,11 +1013,13 @@ async function processCallbackQuery(supabase: any, botToken: string, chatId: str
           : `⚠️ Gagal: ${result.message}`;
       }
     } else {
-      const { data: subOrder } = await supabase.from('subscription_orders').select('id, show_id, phone, email, status, short_id').eq('short_id', shortId).maybeSingle();
+      let subQuery = supabase.from('subscription_orders').select('id, show_id, phone, email, status, short_id');
+      subQuery = isUuid ? subQuery.eq('id', orderId) : subQuery.eq('short_id', orderId);
+      const { data: subOrder } = await subQuery.maybeSingle();
       if (!subOrder) {
-        resultText = `⚠️ Order subscription ${shortId} tidak ditemukan.`;
+        resultText = `⚠️ Order subscription ${orderId} tidak ditemukan.`;
       } else if (subOrder.status !== 'pending') {
-        resultText = `⚠️ Order subscription ${shortId} sudah diproses (${subOrder.status}).`;
+        resultText = `⚠️ Order subscription ${orderId} sudah diproses (${subOrder.status}).`;
       } else {
         const result = await processSubscriptionOrder(supabase, botToken, chatId, subOrder, action, true);
         resultText = result.success
@@ -1046,7 +1059,7 @@ async function processCallbackQuery(supabase: any, botToken: string, chatId: str
     }
 
     // Cross-notify WhatsApp
-    await notifyWhatsAppAdmins(supabase, `${action === 'approve' ? 'YA' : 'TIDAK'} ${shortId} (via tombol)`);
+    await notifyWhatsAppAdmins(supabase, `${action === 'approve' ? 'YA' : 'TIDAK'} ${orderId} (via tombol)`);
   } catch (e) {
     console.error('processCallbackQuery error:', e);
     await sendTelegramMessage(botToken, chatId, `⚠️ Error callback: ${e instanceof Error ? escapeMarkdown(e.message) : 'Unknown'}`);
