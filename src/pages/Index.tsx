@@ -570,25 +570,25 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Announcement Banner */}
+      {/* Announcement Banner - Prominent, above descriptions */}
       {settings.announcement_enabled === "true" && settings.announcement_text && (
-        <section className="px-4">
+        <section className="px-4 py-4">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
             className="mx-auto max-w-4xl"
           >
-            <div className="relative overflow-hidden rounded-2xl border border-[hsl(var(--warning))]/30 bg-gradient-to-r from-[hsl(var(--warning))]/10 via-[hsl(var(--warning))]/5 to-primary/10 p-5 md:p-6">
-              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[hsl(var(--warning))]/10 blur-2xl" />
-              <div className="absolute -left-6 -bottom-6 h-20 w-20 rounded-full bg-primary/10 blur-2xl" />
-              <div className="relative flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--warning))]/20">
-                  <Info className="h-5 w-5 text-[hsl(var(--warning))]" />
+            <div className="relative overflow-hidden rounded-2xl border-2 border-[hsl(var(--warning))]/50 bg-gradient-to-r from-[hsl(var(--warning))]/15 via-[hsl(var(--warning))]/10 to-primary/15 p-5 md:p-7 shadow-lg shadow-[hsl(var(--warning))]/10">
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[hsl(var(--warning))]/15 blur-2xl" />
+              <div className="absolute -left-8 -bottom-8 h-28 w-28 rounded-full bg-primary/15 blur-2xl" />
+              <div className="relative flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[hsl(var(--warning))]/25 ring-2 ring-[hsl(var(--warning))]/20">
+                  <Info className="h-6 w-6 text-[hsl(var(--warning))]" />
                 </div>
-                <div>
-                  <h3 className="mb-1.5 text-sm font-bold text-foreground">📢 Pengumuman</h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground md:text-sm whitespace-pre-line">
+                <div className="min-w-0">
+                  <h3 className="mb-2 text-base font-extrabold text-foreground md:text-lg">📢 Pengumuman</h3>
+                  <p className="text-sm leading-relaxed text-foreground/80 md:text-base whitespace-pre-line">
                     {settings.announcement_text}
                   </p>
                 </div>
