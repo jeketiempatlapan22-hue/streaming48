@@ -43,7 +43,6 @@ const LandingStats = () => {
   }, []);
 
   // Subscribe to Supabase Presence on "online-users" channel (read-only)
-  // This counts only users actively watching the stream (who call track() from LiveChat)
   useEffect(() => {
     const channel = supabase.channel("online-users");
 
