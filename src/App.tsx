@@ -63,36 +63,54 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+const App = () => {
+  // Maintenance mode: block semua kecuali admin
+  if (MAINTENANCE_MODE) {
+    return (
+      <ErrorBoundary>
         <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/auth" element={<ViewerAuth />} />
-              <Route path="/live" element={<LivePage />} />
-              <Route path="/coins" element={<CoinShop />} />
-              <Route path="/schedule" element={<SchedulePage />} />
-              <Route path="/replay" element={<ReplayPage />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/install" element={<InstallPage />} />
-              <Route path="/profile" element={<ViewerProfile />} />
-              <Route path="/membership" element={<MembershipPage />} />
-              <Route path="/faq" element={<FaqPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminLogin /></Suspense>} />
+            <Route path="/admin/dashboard" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
+            <Route path="*" element={<MaintenancePage />} />
+          </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+      </ErrorBoundary>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/admin" element={<AdminLogin />} />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/auth" element={<ViewerAuth />} />
+                <Route path="/live" element={<LivePage />} />
+                <Route path="/coins" element={<CoinShop />} />
+                <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/replay" element={<ReplayPage />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/install" element={<InstallPage />} />
+                <Route path="/profile" element={<ViewerProfile />} />
+                <Route path="/membership" element={<MembershipPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 );
 
 export default App;
