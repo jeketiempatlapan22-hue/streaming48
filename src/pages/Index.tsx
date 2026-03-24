@@ -161,7 +161,7 @@ const Index = () => {
     const cleanupBalance = fetchCoinUser();
 
     const showCh = supabase.channel("idx-shows")
-      .on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => { invalidateCache("public_shows"); fetchData(); })
       .subscribe();
     const streamCh = supabase.channel("idx-streams")
       .on("postgres_changes", { event: "*", schema: "public", table: "streams" }, (payload: any) => {
