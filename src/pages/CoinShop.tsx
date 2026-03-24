@@ -58,7 +58,7 @@ const CoinShop = () => {
         await fetchData(session.user.id);
       } catch {
         if (!cancelled) {
-          toast({ title: "Server sedang sibuk", description: "Coba muat ulang halaman sebentar lagi.", variant: "destructive" });
+          navigate("/auth");
         }
       } finally {
         if (!cancelled) setLoading(false);
