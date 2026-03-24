@@ -1233,16 +1233,20 @@ async function handleGiveTokenWa(supabase: any, usernameInput: string, showInput
     if (!profiles || profiles.length === 0) return `⚠️ User "${usernameInput}" tidak ditemukan`;
     const profile = profiles.find((p: any) => p.username?.toLowerCase() === usernameInput.toLowerCase()) || profiles[0];
 
-    // Find show by short ID or name
-    const shortIdMatch = showInput.match(/^#?([a-f0-9]{6})$/i);
+    const cleanShowInput = showInput.replace(/^#/, '').trim();
+    const hexOnly = cleanShowInput.replace(/-/g, '').toLowerCase();
+    const isHexId = /^[a-f0-9]{6,32}$/i.test(hexOnly);
     let show: any = null;
 
-    if (shortIdMatch) {
-      const shortId = shortIdMatch[1].toLowerCase();
+    if (isHexId) {
       const { data: shows } = await supabase.from('shows').select('id, title, schedule_date, schedule_time, access_password');
-      show = (shows || []).find((s: any) => s.id.replace(/-/g, '').slice(0, 6).toLowerCase() === shortId);
+      show = (shows || []).find((s: any) => s.id.replace(/-/g, '').toLowerCase() === hexOnly);
+      if (!show && hexOnly.length >= 6) {
+        const prefixMatches = (shows || []).filter((s: any) => s.id.replace(/-/g, '').toLowerCase().startsWith(hexOnly));
+        if (prefixMatches.length === 1) show = prefixMatches[0];
+      }
     } else {
-      const { data: shows } = await supabase.from('shows').select('id, title, schedule_date, schedule_time, access_password').ilike('title', `%${showInput}%`).limit(1);
+      const { data: shows } = await supabase.from('shows').select('id, title, schedule_date, schedule_time, access_password').ilike('title', `%${cleanShowInput}%`).limit(1);
       show = shows?.[0];
     }
 
