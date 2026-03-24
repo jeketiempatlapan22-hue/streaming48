@@ -100,7 +100,7 @@ const ViewerAuth = () => {
     submitRef.current = true;
 
     const rlKey = `viewer-auth-${mode}`;
-    if (!checkClientRateLimit(rlKey, 5, 60_000)) {
+    if (!checkClientRateLimit(rlKey, 8, 60_000)) {
       const remaining = getRateLimitRemaining(rlKey);
       toast.error(`Terlalu banyak percobaan. Tunggu ${remaining} detik.`);
       submitRef.current = false;
