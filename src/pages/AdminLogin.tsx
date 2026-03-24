@@ -83,9 +83,9 @@ const AdminLogin = () => {
       if (adminCheck.error) {
         toast({
           title: "Verifikasi admin tertunda",
-          description: "Session login tersimpan, tapi server sedang sibuk saat cek role admin. Klik Login lagi dalam beberapa detik.",
-          variant: "destructive",
+          description: "Session login tersimpan. Kami arahkan ke dashboard untuk verifikasi ulang otomatis.",
         });
+        navigate("/admin/dashboard");
         return;
       }
 
