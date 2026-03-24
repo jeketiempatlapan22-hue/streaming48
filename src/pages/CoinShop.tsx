@@ -16,6 +16,7 @@ import { useProtectedAuth } from "@/hooks/useProtectedAuth";
 interface CoinPackage { id: string; name: string; coin_amount: number; price: string; qris_image_url: string | null; }
 
 const CoinShop = () => {
+  const { isBanned, banReason, signOut } = useProtectedAuth();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
   const [balance, setBalance] = useState(0);
