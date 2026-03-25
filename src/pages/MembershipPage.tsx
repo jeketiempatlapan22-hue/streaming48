@@ -179,6 +179,7 @@ const MembershipPage = () => {
     setResultGroupLink((data as any).group_link || selectedShow.group_link || "");
     setCoinBalance((data as any).remaining_balance || 0);
     setPurchaseStep("done");
+    fetchMyOrders();
   };
 
   return (
