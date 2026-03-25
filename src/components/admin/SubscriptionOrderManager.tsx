@@ -368,7 +368,7 @@ const SubscriptionOrderManager = () => {
               <Input
                 value={newOrder.phone}
                 onChange={(e) => setNewOrder((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="08xxxxxxxxxx"
+                placeholder="+628xxxxxxxxxx atau +60xxxxxxxxxx"
               />
             </div>
             <div>
