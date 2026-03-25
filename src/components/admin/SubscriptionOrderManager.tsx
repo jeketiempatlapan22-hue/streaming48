@@ -61,7 +61,12 @@ const SubscriptionOrderManager = () => {
   };
 
   const sendWhatsApp = async (phone: string, message: string) => {
-    const cleanPhone = phone.replace(/^0/, "62").replace(/[^0-9]/g, "");
+    let cleanPhone = phone.replace(/[^0-9+]/g, "");
+    if (cleanPhone.startsWith("+")) {
+      cleanPhone = cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith("0")) {
+      cleanPhone = "62" + cleanPhone.substring(1);
+    }
     try {
       const { data, error } = await supabase.functions.invoke("send-whatsapp", {
         body: { target: cleanPhone, message },
@@ -225,7 +230,7 @@ const SubscriptionOrderManager = () => {
                       <Input
                         value={editPhones[order.id]}
                         onChange={(e) => setEditPhones((prev) => ({ ...prev, [order.id]: e.target.value }))}
-                        placeholder="08xxxxxxxxxx"
+                        placeholder="+628xx / +60xx"
                         className="h-7 text-xs w-48"
                       />
                       <Button size="sm" variant="outline" className="h-7 px-2" disabled={savingPhone === order.id}
@@ -363,7 +368,7 @@ const SubscriptionOrderManager = () => {
               <Input
                 value={newOrder.phone}
                 onChange={(e) => setNewOrder((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="08xxxxxxxxxx"
+                placeholder="+628xxxxxxxxxx atau +60xxxxxxxxxx"
               />
             </div>
             <div>
