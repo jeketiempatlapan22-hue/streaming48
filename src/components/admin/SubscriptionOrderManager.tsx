@@ -147,8 +147,34 @@ const SubscriptionOrderManager = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">📞 {order.phone} · 📧 {order.email}</p>
-                <p className="text-[10px] text-muted-foreground">{new Date(order.created_at).toLocaleString("id-ID")}</p>
+                <p className="text-xs text-muted-foreground">📞 {order.phone}</p>
+                <div className="flex items-center gap-1.5">
+                  <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+                  {editEmails[order.id] !== undefined ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={editEmails[order.id]}
+                        onChange={(e) => setEditEmails((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                        placeholder="Ketik email user..."
+                        className="h-7 text-xs w-48"
+                      />
+                      <Button size="sm" variant="outline" className="h-7 px-2" disabled={savingEmail === order.id}
+                        onClick={() => saveEmail(order.id)}>
+                        <Save className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                        onClick={() => setEditEmails((prev) => { const n = { ...prev }; delete n[order.id]; return n; })}>
+                        Batal
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEditEmails((prev) => ({ ...prev, [order.id]: order.email || "" }))}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">
+                      {order.email || <span className="italic text-muted-foreground/60">Belum ada email — klik untuk isi</span>}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div className="flex gap-1">
