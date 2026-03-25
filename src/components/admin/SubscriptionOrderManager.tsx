@@ -24,7 +24,9 @@ const SubscriptionOrderManager = () => {
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("pending");
   const [waMessages, setWaMessages] = useState<Record<string, string>>({});
   const [editEmails, setEditEmails] = useState<Record<string, string>>({});
+  const [editPhones, setEditPhones] = useState<Record<string, string>>({});
   const [savingEmail, setSavingEmail] = useState<string | null>(null);
+  const [savingPhone, setSavingPhone] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [bulkMessage, setBulkMessage] = useState("");
   const [showBulk, setShowBulk] = useState(false);
@@ -72,6 +74,17 @@ const SubscriptionOrderManager = () => {
     } catch {
       toast({ title: "Gagal mengirim WA", variant: "destructive" });
     }
+  };
+
+  const savePhone = async (id: string) => {
+    const newPhone = editPhones[id]?.trim();
+    if (!newPhone) return;
+    setSavingPhone(id);
+    await (supabase as any).from("subscription_orders").update({ phone: newPhone }).eq("id", id);
+    await fetchOrders();
+    setSavingPhone(null);
+    setEditPhones((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    toast({ title: "Nomor HP berhasil diperbarui" });
   };
 
   const saveEmail = async (id: string) => {
@@ -205,7 +218,33 @@ const SubscriptionOrderManager = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">📞 {order.phone}</p>
+                <div className="flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                  {editPhones[order.id] !== undefined ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={editPhones[order.id]}
+                        onChange={(e) => setEditPhones((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                        placeholder="08xxxxxxxxxx"
+                        className="h-7 text-xs w-48"
+                      />
+                      <Button size="sm" variant="outline" className="h-7 px-2" disabled={savingPhone === order.id}
+                        onClick={() => savePhone(order.id)}>
+                        <Save className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                        onClick={() => setEditPhones((prev) => { const n = { ...prev }; delete n[order.id]; return n; })}>
+                        Batal
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEditPhones((prev) => ({ ...prev, [order.id]: order.phone || "" }))}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">
+                      {order.phone || <span className="italic text-muted-foreground/60">Belum ada HP — klik untuk isi</span>}
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-1.5">
                   <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
                   {editEmails[order.id] !== undefined ? (
