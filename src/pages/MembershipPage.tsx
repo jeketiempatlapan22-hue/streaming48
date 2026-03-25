@@ -157,6 +157,7 @@ const MembershipPage = () => {
     setResultGroupLink(selectedShow.group_link || "");
     setPurchaseStep("done");
     setSubmitting(false);
+    fetchMyOrders();
 
     if (orderData?.id) {
       supabase.functions.invoke("notify-subscription-order", {
