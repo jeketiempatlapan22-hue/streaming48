@@ -77,6 +77,7 @@ const MembershipPage = () => {
   useEffect(() => {
     fetchData();
     fetchBalance();
+    fetchMyOrders();
     supabase.from("site_settings").select("value").eq("key", "membership_coin_only").maybeSingle()
       .then(({ data }) => { if (data?.value === "true") setCoinOnly(true); });
 
