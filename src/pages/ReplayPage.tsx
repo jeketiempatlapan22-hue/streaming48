@@ -70,7 +70,7 @@ const ReplayPage = () => {
         if (waRow) setWhatsappNumber(waRow.value);
       }
       if (showsRes.data) {
-        const streamLive = streamRes.data?.is_live ?? true;
+        const streamLive = (streamRes.data as any)?.is_live ?? true;
         const pastShows = (showsRes.data as any[]).filter((s) => {
           if (s.is_subscription || s.replay_coin_price <= 0) return false;
           if (s.is_replay) return true;
