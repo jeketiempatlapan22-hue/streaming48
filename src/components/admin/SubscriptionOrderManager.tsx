@@ -316,11 +316,13 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
 
           const order = orders.find((o) => o.id === id);
           const showInfo = order ? shows[order.show_id] : null;
-          const siteUrl = window.location.origin;
+          const siteUrl = "https://realtime48show.my.id";
 
           if (result.token_code && order?.phone && showInfo) {
             const liveLink = `${siteUrl}/live?t=${result.token_code}`;
-            let message = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showInfo.title}*\n🎫 Token: \`${result.token_code}\`\n📺 Link Nonton: ${liveLink}\n`;
+            let message = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showInfo.title}*\n`;
+            if (showInfo.schedule_date) message += `📅 Jadwal: ${showInfo.schedule_date}${showInfo.schedule_time ? " " + showInfo.schedule_time : ""}\n`;
+            message += `🎫 Token: \`${result.token_code}\`\n📺 Link Nonton: ${liveLink}\n`;
             if (showInfo.access_password) {
               message += `\n🔄 *Akses Replay:*\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi Replay: \`${showInfo.access_password}\`\n`;
             }
