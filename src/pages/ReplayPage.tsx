@@ -62,7 +62,7 @@ const ReplayPage = () => {
     const fetchData = async () => {
       const [showsRes, streamRes, settingsRes] = await Promise.all([
         supabase.rpc("get_public_shows"),
-        supabase.from("streams").select("is_live").limit(1).single(),
+        (supabase.rpc as any)("get_stream_status"),
         supabase.from("site_settings").select("*").in("key", ["whatsapp_number"]),
       ]);
       if (settingsRes.data) {
@@ -70,7 +70,7 @@ const ReplayPage = () => {
         if (waRow) setWhatsappNumber(waRow.value);
       }
       if (showsRes.data) {
-        const streamLive = streamRes.data?.is_live ?? true;
+        const streamLive = (streamRes.data as any)?.is_live ?? true;
         const pastShows = (showsRes.data as any[]).filter((s) => {
           if (s.is_subscription || s.replay_coin_price <= 0) return false;
           if (s.is_replay) return true;
