@@ -414,9 +414,18 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
 
       <div className="space-y-3">
         {filteredOrders.map((order) => (
-          <div key={order.id} className="rounded-xl border border-border bg-card p-4">
+          <div key={order.id} className={`rounded-xl border bg-card p-4 ${selectedIds.has(order.id) ? "border-primary bg-primary/5" : "border-border"}`}>
             <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-1.5">
+              <div className="flex items-start gap-3 flex-1">
+                {order.status === "pending" && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="mt-1 rounded border-input cursor-pointer"
+                  />
+                )}
+                <div className="flex-1 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-foreground">{shows[order.show_id]?.title || "Unknown"}</p>
                   <span className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-bold ${
