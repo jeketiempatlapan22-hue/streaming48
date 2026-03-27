@@ -40,7 +40,14 @@ function edgeRateLimit(key: string, maxRequests: number, windowMs: number): bool
   return true;
 }
 
-function getRateLimitResponse(): Response {
+function getRateLimitResponse(isStreamRequest = false): Response {
+  // For stream requests (play/sub), return a gentler response so HLS players retry gracefully
+  if (isStreamRequest) {
+    return new Response(
+      "#EXTM3U\n#EXT-X-TARGETDURATION:5\n#EXT-X-MEDIA-SEQUENCE:0\n",
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/vnd.apple.mpegurl", "Cache-Control": "no-cache", "Retry-After": "5" } }
+    );
+  }
   return new Response(
     JSON.stringify({ error: "Terlalu banyak request. Coba lagi nanti." }),
     { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "30" } }
@@ -270,6 +277,13 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode");
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  // Global IP rate limit: 600 requests/min across ALL modes (generous for legitimate viewers)
+  if (!edgeRateLimit(`global:${clientIp}`, 600, 60000)) {
+    const isStream = mode === "play" || mode === "sub";
+    return getRateLimitResponse(isStream);
+  }
 
   try {
     // MODE: generate (POST) - generates signed URLs for m3u8 AND youtube
@@ -277,8 +291,7 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { token_code, playlist_id, fingerprint } = body;
 
-      const genClientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (token_code && !edgeRateLimit(`gen:${genClientIp}`, 60, 60000)) {
+      if (token_code && !edgeRateLimit(`gen:${clientIp}`, 60, 60000)) {
         return getRateLimitResponse();
       }
 
@@ -361,9 +374,9 @@ Deno.serve(async (req) => {
       const exp = url.searchParams.get("exp");
       const sig = url.searchParams.get("sig");
 
-      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 180, 60000)) {
-        return getRateLimitResponse();
+      // HLS player requests every 2-6s; 300/min per playlist is safe for legitimate use
+      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 300, 60000)) {
+        return getRateLimitResponse(true);
       }
 
       if (!pid || !exp || !sig) {
@@ -407,8 +420,7 @@ Deno.serve(async (req) => {
       const exp = url.searchParams.get("exp");
       const sig = url.searchParams.get("sig");
 
-      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (pid && !edgeRateLimit(`yt:${clientIp}:${pid}`, 60, 60000)) {
+      if (pid && !edgeRateLimit(`yt:${clientIp}:${pid}`, 30, 60000)) {
         return getRateLimitResponse();
       }
 
@@ -451,9 +463,9 @@ Deno.serve(async (req) => {
       const exp = url.searchParams.get("exp");
       const sig = url.searchParams.get("sig");
 
-      const clientIpSub = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (encoded && !edgeRateLimit(`sub:${clientIpSub}:${encoded.slice(0, 20)}`, 300, 60000)) {
-        return getRateLimitResponse();
+      // Sub-playlists are fetched frequently by HLS; 500/min is safe
+      if (encoded && !edgeRateLimit(`sub:${clientIp}:${encoded.slice(0, 20)}`, 500, 60000)) {
+        return getRateLimitResponse(true);
       }
 
       if (!encoded || !exp || !sig) {
