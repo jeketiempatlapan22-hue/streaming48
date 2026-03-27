@@ -114,13 +114,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   // Cleanup HLS on playlist change
   useEffect(() => {
     hlsInitRef.current = false;
+    setYtFallback(false);
     return () => {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [playlist]);
+  }, [playlistUrl, playlistType]);
 
   const obfuscate = useCallback((str: string) => btoa(unescape(encodeURIComponent(str))), []);
   const deobfuscate = useCallback((str: string) => decodeURIComponent(escape(atob(str))), []);
