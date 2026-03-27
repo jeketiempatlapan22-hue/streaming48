@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, GripVertical, Pencil, Check, X } from "lucide-react";
+import { encryptEmbedId, decryptEmbedId } from "@/lib/embedCrypto";
 
 const PlaylistManager = () => {
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -28,19 +29,27 @@ const PlaylistManager = () => {
   const addPlaylist = async () => {
     if (!newTitle || !newUrl) return;
     setLoading(true);
-    await supabase.from("playlists").insert({ title: newTitle, type: newType, url: newUrl, sort_order: playlists.length });
+    const urlToSave = newType === "youtube" ? encryptEmbedId(newUrl) : newUrl;
+    await supabase.from("playlists").insert({ title: newTitle, type: newType, url: urlToSave, sort_order: playlists.length });
     setNewTitle(""); setNewUrl("");
     await fetchPlaylists();
     toast({ title: "Playlist ditambahkan!" });
     setLoading(false);
   };
 
-  const startEdit = (p: any) => { setEditingId(p.id); setEditTitle(p.title); setEditType(p.type); setEditUrl(p.url); };
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditTitle(p.title);
+    setEditType(p.type);
+    // Decrypt for editing so admin sees the real ID
+    setEditUrl(p.type === "youtube" ? decryptEmbedId(p.url) : p.url);
+  };
   const cancelEdit = () => { setEditingId(null); };
 
   const saveEdit = async () => {
     if (!editingId || !editTitle || !editUrl) return;
-    const { error } = await supabase.from("playlists").update({ title: editTitle, type: editType, url: editUrl }).eq("id", editingId);
+    const urlToSave = editType === "youtube" ? encryptEmbedId(editUrl) : editUrl;
+    const { error } = await supabase.from("playlists").update({ title: editTitle, type: editType, url: urlToSave }).eq("id", editingId);
     if (!error) { toast({ title: "Playlist diperbarui!" }); setEditingId(null); await fetchPlaylists(); }
     else toast({ title: "Gagal memperbarui", variant: "destructive" });
   };

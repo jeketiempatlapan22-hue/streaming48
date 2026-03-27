@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, GripVertical, Pencil, Check, X, Sparkles } from "lucide-react";
 import { ANIMATION_OPTIONS, type AnimationType } from "@/components/viewer/PlayerAnimations";
+import { encryptEmbedId, decryptEmbedId } from "@/lib/embedCrypto";
 
 const LiveControl = () => {
   const [stream, setStream] = useState<any>(null);
@@ -101,19 +102,26 @@ const LiveControl = () => {
   const addPlaylist = async () => {
     if (!newLabel || !newUrl) return;
     setPlLoading(true);
-    await supabase.from("playlists").insert({ title: newLabel, type: newType, url: newUrl, sort_order: playlists.length });
+    const urlToSave = newType === "youtube" ? encryptEmbedId(newUrl) : newUrl;
+    await supabase.from("playlists").insert({ title: newLabel, type: newType, url: urlToSave, sort_order: playlists.length });
     setNewLabel(""); setNewUrl("");
     await fetchPlaylists();
     toast({ title: "Playlist ditambahkan!" });
     setPlLoading(false);
   };
 
-  const startEdit = (p: any) => { setEditingId(p.id); setEditLabel(p.title); setEditType(p.type); setEditUrl(p.url); };
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditLabel(p.title);
+    setEditType(p.type);
+    setEditUrl(p.type === "youtube" ? decryptEmbedId(p.url) : p.url);
+  };
   const cancelEdit = () => setEditingId(null);
 
   const saveEdit = async () => {
     if (!editingId || !editLabel || !editUrl) return;
-    await supabase.from("playlists").update({ title: editLabel, type: editType, url: editUrl }).eq("id", editingId);
+    const urlToSave = editType === "youtube" ? encryptEmbedId(editUrl) : editUrl;
+    await supabase.from("playlists").update({ title: editLabel, type: editType, url: urlToSave }).eq("id", editingId);
     toast({ title: "Playlist diperbarui!" });
     setEditingId(null);
     await fetchPlaylists();
