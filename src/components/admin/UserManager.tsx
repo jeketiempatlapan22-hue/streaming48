@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Users, Coins, Plus, Minus, RefreshCw, ChevronDown, ChevronUp, KeyRound, Eye, EyeOff } from "lucide-react";
@@ -15,6 +15,8 @@ interface UserProfile {
   token_count: number;
 }
 
+const PAGE_SIZE = 50;
+
 const UserManager = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,41 +27,73 @@ const UserManager = () => {
   const [coinAmount, setCoinAmount] = useState("");
   const [coinReason, setCoinReason] = useState("");
   const [adjusting, setAdjusting] = useState(false);
-  // Password reset state
   const [resetUser, setResetUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [page, setPage] = useState(0);
+  const [fetchError, setFetchError] = useState("");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const [profilesRes, balancesRes, ordersRes, tokensRes] = await Promise.all([
-      supabase.from("profiles").select("id, username, created_at"),
-      supabase.from("coin_balances").select("user_id, balance"),
-      supabase.from("coin_orders").select("user_id"),
-      supabase.from("tokens").select("user_id"),
-    ]);
+    setFetchError("");
+    try {
+      // Fetch all profiles with pagination to bypass 1000-row limit
+      let allProfiles: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, username, created_at")
+          .order("created_at", { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allProfiles = allProfiles.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
 
-    const balanceMap: Record<string, number> = {};
-    (balancesRes.data || []).forEach((b: any) => { balanceMap[b.user_id] = b.balance; });
+      // Fetch balances and counts in parallel
+      const [balancesRes, ordersRes, tokensRes] = await Promise.allSettled([
+        supabase.from("coin_balances").select("user_id, balance").limit(5000),
+        supabase.from("coin_orders").select("user_id").limit(5000),
+        supabase.from("tokens").select("user_id").limit(5000),
+      ]);
 
-    const orderCountMap: Record<string, number> = {};
-    (ordersRes.data || []).forEach((o: any) => { orderCountMap[o.user_id] = (orderCountMap[o.user_id] || 0) + 1; });
+      const balanceMap: Record<string, number> = {};
+      if (balancesRes.status === "fulfilled" && balancesRes.value.data) {
+        balancesRes.value.data.forEach((b: any) => { balanceMap[b.user_id] = b.balance; });
+      }
 
-    const tokenCountMap: Record<string, number> = {};
-    (tokensRes.data || []).forEach((t: any) => { if (t.user_id) tokenCountMap[t.user_id] = (tokenCountMap[t.user_id] || 0) + 1; });
+      const orderCountMap: Record<string, number> = {};
+      if (ordersRes.status === "fulfilled" && ordersRes.value.data) {
+        ordersRes.value.data.forEach((o: any) => { orderCountMap[o.user_id] = (orderCountMap[o.user_id] || 0) + 1; });
+      }
 
-    const mapped: UserProfile[] = (profilesRes.data || []).map((p: any) => ({
-      id: p.id,
-      username: p.username,
-      created_at: p.created_at,
-      balance: balanceMap[p.id] || 0,
-      order_count: orderCountMap[p.id] || 0,
-      token_count: tokenCountMap[p.id] || 0,
-    }));
+      const tokenCountMap: Record<string, number> = {};
+      if (tokensRes.status === "fulfilled" && tokensRes.value.data) {
+        tokensRes.value.data.forEach((t: any) => { if (t.user_id) tokenCountMap[t.user_id] = (tokenCountMap[t.user_id] || 0) + 1; });
+      }
 
-    setUsers(mapped);
-    setLoading(false);
+      const mapped: UserProfile[] = allProfiles.map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        created_at: p.created_at,
+        balance: balanceMap[p.id] || 0,
+        order_count: orderCountMap[p.id] || 0,
+        token_count: tokenCountMap[p.id] || 0,
+      }));
+
+      setUsers(mapped);
+    } catch (err: any) {
+      const msg = err?.message || "Gagal memuat data user";
+      setFetchError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
@@ -67,41 +101,51 @@ const UserManager = () => {
   const adjustCoins = async (action: "add" | "deduct") => {
     if (!selectedUser || !coinAmount || parseInt(coinAmount) <= 0) return;
     const amount = parseInt(coinAmount);
+    if (isNaN(amount) || amount <= 0) return;
     setAdjusting(true);
 
-    if (action === "add") {
-      const { error } = await supabase.from("coin_balances").upsert(
-        { user_id: selectedUser.id, balance: selectedUser.balance + amount },
-        { onConflict: "user_id" }
-      );
-      if (!error) {
+    try {
+      if (action === "add") {
+        const { error } = await supabase.from("coin_balances").upsert(
+          { user_id: selectedUser.id, balance: selectedUser.balance + amount },
+          { onConflict: "user_id" }
+        );
+        if (error) throw error;
         await supabase.from("coin_transactions").insert({
           user_id: selectedUser.id,
           amount,
           type: "admin_add",
           description: coinReason || `Admin menambah ${amount} koin`,
         });
-        toast.success(`+${amount} koin ditambahkan`);
-      }
-    } else {
-      const newBal = Math.max(0, selectedUser.balance - amount);
-      const { error } = await supabase.from("coin_balances").update({ balance: newBal }).eq("user_id", selectedUser.id);
-      if (!error) {
+        toast.success(`+${amount} koin ditambahkan ke ${selectedUser.username || "user"}`);
+      } else {
+        if (selectedUser.balance <= 0) {
+          toast.error("Saldo user sudah 0");
+          setAdjusting(false);
+          return;
+        }
+        const deducted = Math.min(amount, selectedUser.balance);
+        const newBal = selectedUser.balance - deducted;
+        const { error } = await supabase.from("coin_balances").update({ balance: newBal }).eq("user_id", selectedUser.id);
+        if (error) throw error;
         await supabase.from("coin_transactions").insert({
           user_id: selectedUser.id,
-          amount: -Math.min(amount, selectedUser.balance),
+          amount: -deducted,
           type: "admin_deduct",
-          description: coinReason || `Admin mengurangi ${amount} koin`,
+          description: coinReason || `Admin mengurangi ${deducted} koin`,
         });
-        toast.success(`-${Math.min(amount, selectedUser.balance)} koin dikurangi`);
+        toast.success(`-${deducted} koin dikurangi dari ${selectedUser.username || "user"}`);
       }
-    }
 
-    setAdjusting(false);
-    setSelectedUser(null);
-    setCoinAmount("");
-    setCoinReason("");
-    fetchUsers();
+      setSelectedUser(null);
+      setCoinAmount("");
+      setCoinReason("");
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal mengubah koin");
+    } finally {
+      setAdjusting(false);
+    }
   };
 
   const resetPassword = async () => {
@@ -114,8 +158,10 @@ const UserManager = () => {
       const { data, error } = await supabase.functions.invoke("admin-reset-password", {
         body: { target_user_id: resetUser.id, new_password: newPassword },
       });
-      if (error || !data?.success) {
-        toast.error(data?.error || error?.message || "Gagal mereset password");
+      if (error) {
+        toast.error(error.message || "Gagal menghubungi server");
+      } else if (!data?.success) {
+        toast.error(data?.error || "Gagal mereset password");
       } else {
         toast.success(`Password ${resetUser.username || resetUser.id.slice(0, 8)} berhasil diubah`);
         setResetUser(null);
@@ -124,13 +170,15 @@ const UserManager = () => {
       }
     } catch {
       toast.error("Gagal menghubungi server");
+    } finally {
+      setResetting(false);
     }
-    setResetting(false);
   };
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortField(field); setSortDir("desc"); }
+    setPage(0);
   };
 
   const SortIcon = ({ field }: { field: typeof sortField }) => {
@@ -138,17 +186,23 @@ const UserManager = () => {
     return sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
   };
 
-  const filtered = users
-    .filter(u => {
-      const q = search.toLowerCase();
-      return !q || (u.username || "").toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
-    })
-    .sort((a, b) => {
-      const dir = sortDir === "asc" ? 1 : -1;
-      if (sortField === "balance") return (a.balance - b.balance) * dir;
-      if (sortField === "username") return ((a.username || "").localeCompare(b.username || "")) * dir;
-      return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
-    });
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return users
+      .filter(u => !q || (u.username || "").toLowerCase().includes(q) || u.id.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const dir = sortDir === "asc" ? 1 : -1;
+        if (sortField === "balance") return (a.balance - b.balance) * dir;
+        if (sortField === "username") return ((a.username || "").localeCompare(b.username || "")) * dir;
+        return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
+      });
+  }, [users, search, sortField, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Reset page when search changes
+  useEffect(() => { setPage(0); }, [search]);
 
   return (
     <div className="space-y-4">
@@ -158,8 +212,17 @@ const UserManager = () => {
           <h2 className="text-lg font-bold text-foreground">Manajemen User</h2>
           <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">{users.length}</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={fetchUsers} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></Button>
+        <Button variant="ghost" size="icon" onClick={fetchUsers} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        </Button>
       </div>
+
+      {fetchError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {fetchError}
+          <Button variant="link" size="sm" className="ml-2 text-destructive" onClick={fetchUsers}>Coba lagi</Button>
+        </div>
+      )}
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -187,18 +250,24 @@ const UserManager = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Memuat...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Tidak ada user ditemukan</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" /> Memuat data user...
+                  </div>
+                </td></tr>
+              ) : paged.length === 0 ? (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  {search ? `Tidak ada user cocok "${search}"` : "Tidak ada user ditemukan"}
+                </td></tr>
               ) : (
-                filtered.slice(0, 100).map(u => (
+                paged.map(u => (
                   <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{u.username || "—"}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">{u.id.slice(0, 8)}...</p>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`font-bold ${u.balance > 0 ? "text-[hsl(var(--warning))]" : "text-muted-foreground"}`}>{u.balance}</span>
+                      <span className={`font-bold ${u.balance > 0 ? "text-primary" : "text-muted-foreground"}`}>{u.balance}</span>
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{u.order_count}</td>
                     <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{u.token_count}</td>
@@ -207,10 +276,10 @@ const UserManager = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(u); setCoinAmount(""); setCoinReason(""); }}>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setSelectedUser(u); setCoinAmount(""); setCoinReason(""); }}>
                           <Coins className="mr-1 h-3 w-3" /> Koin
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => { setResetUser(u); setNewPassword(""); setShowPassword(false); }}>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setResetUser(u); setNewPassword(""); setShowPassword(false); }}>
                           <KeyRound className="mr-1 h-3 w-3" /> Sandi
                         </Button>
                       </div>
@@ -221,7 +290,23 @@ const UserManager = () => {
             </tbody>
           </table>
         </div>
-        {filtered.length > 100 && <p className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border">Menampilkan 100 dari {filtered.length} user</p>}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border px-4 py-2">
+            <p className="text-xs text-muted-foreground">
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} dari {filtered.length} user
+            </p>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                ← Prev
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                Next →
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Kelola Koin Dialog */}
@@ -234,7 +319,7 @@ const UserManager = () => {
           <div className="space-y-4">
             <div className="rounded-lg bg-secondary/50 p-4 text-center">
               <p className="text-xs text-muted-foreground">Saldo Saat Ini</p>
-              <p className="text-2xl font-bold text-[hsl(var(--warning))]">{selectedUser?.balance} Koin</p>
+              <p className="text-2xl font-bold text-primary">{selectedUser?.balance} Koin</p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Jumlah Koin</label>
