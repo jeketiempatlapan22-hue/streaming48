@@ -102,17 +102,18 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
       // Find the order to get phone and show info
       const order = orders.find((o) => o.id === id);
       const showInfo = order ? shows[order.show_id] : null;
-      const siteUrl = window.location.origin;
+      const siteUrl = "https://realtime48show.my.id";
 
       if (result.token_code && order?.phone && showInfo) {
-        // Build WhatsApp message with live link + token + replay info
         const liveLink = `${siteUrl}/live?t=${result.token_code}`;
         let message = `✅ *Pesanan Dikonfirmasi!*\n\n` +
-          `🎭 Show: *${showInfo.title}*\n` +
-          `🎫 Token: \`${result.token_code}\`\n` +
+          `🎭 Show: *${showInfo.title}*\n`;
+        if (showInfo.schedule_date) {
+          message += `📅 Jadwal: ${showInfo.schedule_date}${showInfo.schedule_time ? " " + showInfo.schedule_time : ""}\n`;
+        }
+        message += `🎫 Token: \`${result.token_code}\`\n` +
           `📺 Link Nonton: ${liveLink}\n`;
 
-        // Add replay password if show has one
         if (showInfo.access_password) {
           const replayLink = `${siteUrl}/replay`;
           message += `\n🔄 *Akses Replay:*\n` +
@@ -123,7 +124,6 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
         message += `\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini ke orang lain.\n` +
           `\nTerima kasih telah membeli! 🎉`;
 
-        // Auto-send WhatsApp to user
         sendWhatsApp(order.phone, message);
         toast({ title: `Order dikonfirmasi! Token: ${result.token_code} — WA dikirim` });
       } else if (result.token_code) {
