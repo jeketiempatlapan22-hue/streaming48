@@ -138,7 +138,7 @@ const SchedulePage = () => {
     setPurchaseStep("done");
     // Always send notification regardless of insert success
     supabase.functions.invoke("notify-subscription-order", {
-      body: { order_id: orderId || `manual_${Date.now()}`, show_title: selectedShow.title, phone, email: email || null, proof_file_path: proofFilePath || null, proof_bucket: "payment-proofs", order_type: "show" },
+      body: { order_id: orderId || `manual_${Date.now()}`, show_title: selectedShow.title, phone, email: email || null, proof_file_path: proofFilePath || null, proof_bucket: "payment-proofs", order_type: "show", schedule_date: selectedShow.schedule_date || null, schedule_time: selectedShow.schedule_time || null },
     }).catch((e) => console.warn("Notify error:", e));
     openWhatsAppOrderDetail(selectedShow, phone, email);
   };
