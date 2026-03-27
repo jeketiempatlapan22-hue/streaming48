@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { withTimeout } from "@/lib/queryCache";
-import { ArrowLeft, Coins, Save, User, History, BarChart3, Shield, Ticket, Key, Copy, LogOut } from "lucide-react";
+import { ArrowLeft, Coins, Save, User, History, BarChart3, Shield, Ticket, Key, Copy, LogOut, Phone, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import BannedScreen from "@/components/viewer/BannedScreen";
@@ -23,6 +23,8 @@ const ViewerProfile = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"orders" | "subscriptions" | "tokens">("orders");
+  const [editingPhone, setEditingPhone] = useState<Record<string, string>>({});
+  const [savingPhone, setSavingPhone] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,6 +72,18 @@ const ViewerProfile = () => {
   };
 
   const copyText = (text: string) => { navigator.clipboard.writeText(text); toast.success("Disalin!"); };
+
+  const saveOrderPhone = async (orderId: string) => {
+    const newPhone = editingPhone[orderId]?.trim();
+    if (!newPhone) return;
+    setSavingPhone(orderId);
+    const { error } = await (supabase as any).from("subscription_orders").update({ phone: newPhone }).eq("id", orderId);
+    setSavingPhone(null);
+    if (error) { toast.error("Gagal menyimpan nomor HP"); return; }
+    setSubOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, phone: newPhone } : o));
+    setEditingPhone((prev) => { const n = { ...prev }; delete n[orderId]; return n; });
+    toast.success("Nomor HP berhasil diperbarui!");
+  };
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -149,9 +163,43 @@ const ViewerProfile = () => {
             subOrders.length === 0 ? <p className="py-6 text-center text-xs text-muted-foreground">Belum ada langganan</p> : (
               <div className="space-y-2">
                 {subOrders.map((o) => (
-                  <div key={o.id} className="flex items-center justify-between rounded-lg bg-background p-3">
-                    <div className="min-w-0 flex-1"><p className="text-xs font-medium text-foreground">{(o as any).shows?.title || "Show"}</p><p className="text-[10px] text-muted-foreground">{o.payment_method} • {new Date(o.created_at).toLocaleString("id-ID")}</p></div>
-                    {statusBadge(o.status)}
+                  <div key={o.id} className="rounded-lg bg-background p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-foreground">{(o as any).shows?.title || "Show"}</p>
+                        <p className="text-[10px] text-muted-foreground">{o.payment_method} • {new Date(o.created_at).toLocaleString("id-ID")}</p>
+                      </div>
+                      {statusBadge(o.status)}
+                    </div>
+                    {/* Phone display & edit */}
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                      {editingPhone[o.id] !== undefined ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <Input
+                            value={editingPhone[o.id]}
+                            onChange={(e) => setEditingPhone((prev) => ({ ...prev, [o.id]: e.target.value }))}
+                            placeholder="08xxxxxxxxxx"
+                            className="h-7 text-xs flex-1"
+                          />
+                          <Button size="sm" variant="outline" className="h-7 px-2" disabled={savingPhone === o.id} onClick={() => saveOrderPhone(o.id)}>
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <button className="text-[10px] text-muted-foreground hover:text-foreground px-1" onClick={() => setEditingPhone((prev) => { const n = { ...prev }; delete n[o.id]; return n; })}>Batal</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingPhone((prev) => ({ ...prev, [o.id]: o.phone || "" }))}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {o.phone || <span className="italic text-muted-foreground/60">Belum ada HP</span>}
+                          <Pencil className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </div>
+                    {o.status === "pending" && !o.phone && (
+                      <p className="text-[10px] text-[hsl(var(--warning))]">⚠️ Tambahkan nomor HP agar admin bisa mengirim link akses!</p>
+                    )}
                   </div>
                 ))}
               </div>
