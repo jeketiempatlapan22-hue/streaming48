@@ -217,7 +217,7 @@ const LivePage = () => {
 
         const [streamRes, playlistRes, settingsRes] = await Promise.allSettled([
           withTimeout((async () => await supabase.from("streams").select("*").limit(1).single())(), 8_000, "Stream timeout"),
-          withTimeout((async () => await supabase.from("playlists").select("*").eq("is_active", true).order("sort_order"))(), 8_000, "Playlist timeout"),
+          withTimeout((async () => await (supabase.rpc as any)("get_safe_playlists"))(), 8_000, "Playlist timeout"),
           withTimeout((async () => await supabase.from("site_settings").select("*"))(), 8_000, "Settings timeout"),
         ]);
 
