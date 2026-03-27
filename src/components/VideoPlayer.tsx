@@ -617,6 +617,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       {playlistType === "cloudflare" && (
         <>
           <iframe
+            key={iframeRefreshKey}
             src={cloudflareSrc}
             className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
             allow="autoplay; fullscreen"
