@@ -805,12 +805,15 @@ const Index = () => {
             <h3 className="mb-1 text-lg font-bold text-foreground">{selectedShow.title}</h3>
             <p className="mb-4 text-sm text-muted-foreground">{selectedShow.price}</p>
 
-            {/* Regular show: Step 1 - QRIS + Upload */}
-            {!selectedShow.is_subscription && purchaseStep === "qris" && (
+            {/* Hidden file input for gallery */}
+            <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { handleUploadProof(e as any); if (galleryInputRef.current) galleryInputRef.current.value = ""; }} />
+
+            {/* Regular show: QRIS + Phone + optional upload in one step */}
+            {!selectedShow.is_subscription && purchaseStep === "info" && (
               <div className="space-y-4">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm text-muted-foreground">
-                    Silakan scan QRIS di bawah, lalu upload bukti transfer.
+                    Silakan scan QRIS di bawah, lalu isi data dan kirim pesanan.
                   </p>
                 </div>
                 {selectedShow.qris_image_url ? (
@@ -820,25 +823,6 @@ const Index = () => {
                     QRIS belum tersedia
                   </div>
                 )}
-                <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { handleUploadProof(e as any); if (galleryInputRef.current) galleryInputRef.current.value = ""; }} />
-                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => { handleUploadProof(e as any); if (cameraInputRef.current) cameraInputRef.current.value = ""; }} />
-                <div className="flex gap-2">
-                  <button type="button" className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10" onClick={() => galleryInputRef.current?.click()} disabled={uploadingProof}>
-                    <Upload className="h-4 w-4" /> {uploadingProof ? "..." : "Galeri"}
-                  </button>
-                  <button type="button" className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10" onClick={() => cameraInputRef.current?.click()} disabled={uploadingProof}>
-                    📷 {uploadingProof ? "..." : "Kamera"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Regular show: Step 2 - Phone + Submit */}
-            {!selectedShow.is_subscription && purchaseStep === "info" && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
-                  <CheckCircle className="h-4 w-4" /> Bukti pembayaran berhasil diupload
-                </div>
                 <div className="rounded-xl border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/5 p-3">
                   <p className="text-xs font-semibold text-[hsl(var(--warning))] mb-1">⚠️ Penting!</p>
                   <p className="text-xs text-muted-foreground">
@@ -852,6 +836,21 @@ const Index = () => {
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="bg-background" />
                   <p className="mt-1 text-[10px] text-muted-foreground">Contoh: 081234567890 atau 628123456789</p>
                 </div>
+                {/* Optional proof upload */}
+                {proofFilePath ? (
+                  <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
+                    <CheckCircle className="h-4 w-4" /> Bukti pembayaran berhasil diupload
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={uploadingProof}
+                  >
+                    <Upload className="h-4 w-4" /> {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran (opsional)"}
+                  </button>
+                )}
                 <div className="rounded-xl border border-border bg-card p-4">
                   <p className="mb-2 text-xs font-semibold text-foreground">📋 Ringkasan Pesanan</p>
                   <div className="space-y-1 text-xs text-muted-foreground">
@@ -872,7 +871,7 @@ const Index = () => {
               <div className="space-y-4 text-center">
                 <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
                 <h4 className="text-lg font-bold text-foreground">Pesanan Terkirim!</h4>
-                <p className="text-sm text-muted-foreground">Data dan bukti pembayaran Anda telah dikirim. Admin akan mengirimkan <strong>link live streaming</strong> ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
+                <p className="text-sm text-muted-foreground">Data pesanan Anda telah dikirim. Admin akan mengirimkan <strong>link live streaming</strong> ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
                 {settings.whatsapp_number && (
                   <Button
                     onClick={() => openWhatsAppOrderDetail(selectedShow, phone, email)}
@@ -897,14 +896,14 @@ const Index = () => {
                 ) : (
                   <div className="rounded-lg border border-border bg-secondary/50 p-8 text-center text-sm text-muted-foreground">QRIS belum tersedia</div>
                 )}
-                <div className="flex gap-2">
-                  <button type="button" className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10" onClick={() => galleryInputRef.current?.click()} disabled={uploadingProof}>
-                    <Upload className="h-4 w-4" /> {uploadingProof ? "..." : "Galeri"}
-                  </button>
-                  <button type="button" className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10" onClick={() => cameraInputRef.current?.click()} disabled={uploadingProof}>
-                    📷 {uploadingProof ? "..." : "Kamera"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={uploadingProof}
+                >
+                  <Upload className="h-4 w-4" /> {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran"}
+                </button>
               </div>
             )}
 
