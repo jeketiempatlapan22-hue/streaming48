@@ -31,6 +31,8 @@ const ViewerAuth = () => {
   const refCode = searchParams.get("ref");
   const navigate = useNavigate();
   const submitRef = useRef(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Check existing session with timeout — don't hang
