@@ -25,6 +25,8 @@ interface ShowInfo {
   is_subscription: boolean;
   access_password: string;
   is_replay: boolean;
+  schedule_date: string;
+  schedule_time: string;
 }
 
 interface SubscriptionOrderManagerProps {
