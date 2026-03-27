@@ -51,6 +51,8 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
   const [newOrder, setNewOrder] = useState({ show_id: "", phone: "", email: "" });
   const [addingOrder, setAddingOrder] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
   const { toast } = useToast();
 
   const fetchOrders = async () => {
