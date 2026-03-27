@@ -36,7 +36,7 @@ serve(async (req) => {
     const ADMIN_CHAT_ID = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
     if (!ADMIN_CHAT_ID) throw new Error('ADMIN_TELEGRAM_CHAT_ID is not configured');
 
-    const { order_id, show_title, phone, email, proof_file_path, proof_bucket, order_type } = await req.json();
+    const { order_id, show_title, phone, email, proof_file_path, proof_bucket, order_type, schedule_date, schedule_time } = await req.json();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
