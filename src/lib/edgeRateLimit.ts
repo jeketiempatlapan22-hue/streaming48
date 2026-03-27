@@ -10,8 +10,8 @@ export const ALLOWED_ORIGINS = [
   'http://localhost:8080',
 ];
 
-export function validateOrigin(req: Request, origins: string[]): boolean {
+export function validateOrigin(req: Request, origins: string[], allowEmpty = false): boolean {
   const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-  if (!origin) return true; // Allow non-browser requests (e.g. cron, bots)
+  if (!origin) return allowEmpty; // Only allow empty origin when explicitly permitted (e.g. cron jobs)
   return origins.some(o => origin.startsWith(o));
 }
