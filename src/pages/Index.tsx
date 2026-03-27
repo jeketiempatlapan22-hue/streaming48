@@ -208,6 +208,12 @@ const Index = () => {
     }
   };
 
+  const openWhatsAppOrderDetail = (show: Show, orderPhone: string, orderEmail: string) => {
+    if (!settings.whatsapp_number) return;
+    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}\n📧 Email: ${orderEmail}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
+    window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const handleSubmitRegular = async () => {
     if (!selectedShow || !proofFilePath) return;
     const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(proofFilePath, 86400);
@@ -221,6 +227,8 @@ const Index = () => {
         body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "payment-proofs", order_type: "show" },
       }).catch(() => {});
     }
+    // Auto-open WhatsApp with order details (no proof)
+    openWhatsAppOrderDetail(selectedShow, phone, email);
   };
 
   const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
