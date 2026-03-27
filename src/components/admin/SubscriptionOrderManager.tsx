@@ -662,7 +662,7 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
               >
                 <option value="__current__">
                   {showFilter !== "all" && shows[showFilter]
-                    ? `${shows[showFilter].title} (filter saat ini)`
+                    ? `${shows[showFilter].title}${shows[showFilter].schedule_date ? ` (${shows[showFilter].schedule_date})` : ""} (filter saat ini)`
                     : "Semua show (filter saat ini)"}
                 </option>
                 {modeShows.map(([id, s]) => {
