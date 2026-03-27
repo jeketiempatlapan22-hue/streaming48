@@ -237,7 +237,7 @@ const Index = () => {
       const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 86400);
       setProofUrl(urlData?.signedUrl || "");
       setProofFilePath(path);
-      if (selectedShow.is_subscription) setPurchaseStep("info");
+      setPurchaseStep("info");
     } catch {
       toast.error("Upload gagal, coba lagi");
     }

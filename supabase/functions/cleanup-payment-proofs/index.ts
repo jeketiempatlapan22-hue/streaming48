@@ -48,12 +48,13 @@ Deno.serve(async (req) => {
     }
 
     // 2. Clean confirmed/rejected subscription_orders with payment proofs (older than 7 days)
+    // Clean confirmed/rejected subscription_orders with payment proofs (older than 10 hours)
     const { data: subOrders } = await supabase
       .from("subscription_orders")
       .select("id, payment_proof_url")
       .in("status", ["confirmed", "rejected"])
       .not("payment_proof_url", "is", null)
-      .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      .lt("created_at", new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString());
 
     if (subOrders?.length) {
       for (const order of subOrders) {
