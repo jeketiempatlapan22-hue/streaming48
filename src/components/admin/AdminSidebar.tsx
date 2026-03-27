@@ -1,5 +1,5 @@
 import logo from "@/assets/logo.png";
-import { Radio, Key, Monitor, Settings, LogOut, Theater, FileText, ClipboardList, Coins, Package, Shield, Activity, ScrollText, UsersRound, UserCog, Image, BarChart3, Gauge, Ticket } from "lucide-react";
+import { Radio, Key, Monitor, Settings, LogOut, Theater, FileText, ClipboardList, Coins, Package, Shield, Activity, ScrollText, UsersRound, UserCog, Image, BarChart3, Gauge, Ticket, KeyRound } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface AdminSidebarProps {
@@ -27,6 +27,7 @@ const sections = [
   { id: "moderators", label: "Akun Moderator", icon: UsersRound },
   { id: "users", label: "Manajemen User", icon: UserCog },
   { id: "media", label: "Media Library", icon: Image },
+  { id: "password-resets", label: "Reset Password", icon: KeyRound },
   { id: "auth-metrics", label: "Auth Metrics", icon: BarChart3 },
   { id: "traffic", label: "Traffic Monitor", icon: Gauge },
 ];
