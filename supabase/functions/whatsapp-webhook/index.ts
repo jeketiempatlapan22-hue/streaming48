@@ -580,7 +580,7 @@ async function processSubOrder(supabase: any, order: any, action: 'approve' | 'r
       // Send WhatsApp notification to user
       const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
       if (FONNTE_TOKEN && order.phone) {
-        const siteUrl = 'https://streaming48.lovable.app';
+        const siteUrl = 'https://realtime48show.my.id';
         if (result.type === 'regular' && result.token_code) {
           const liveLink = `${siteUrl}/live?t=${result.token_code}`;
           let waMsg = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showTitle}*\n🎫 Token: ${result.token_code}\n📺 Link Nonton: ${liveLink}\n`;
@@ -632,7 +632,7 @@ async function handlePasswordReset(supabase: any, shortId: string, action: 'appr
       // Send reset link via WhatsApp if phone exists
       const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
       if (FONNTE_TOKEN && request.phone) {
-        const resetLink = `https://streaming48.lovable.app/reset-password?token=${request.secure_token || request.short_id}`;
+        const resetLink = `https://realtime48show.my.id/reset-password?token=${request.secure_token || request.short_id}`;
         const waMsg = `🔑 *Reset Password Disetujui*\n\nKlik link berikut untuk membuat password baru:\n${resetLink}\n\n⏰ Link berlaku 2 jam.`;
         await sendFonnteMessage(FONNTE_TOKEN, request.phone, waMsg);
       }
