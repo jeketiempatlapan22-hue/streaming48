@@ -188,6 +188,7 @@ const AdminMonitor = () => {
             onDeleteMessage={handleDeleteMessage}
             onBlockUser={handleBlockUser}
             onToggleChatMod={handleToggleChatMod}
+            onBanUser={handleBanByUsername}
           />
         </div>
       </div>
