@@ -42,6 +42,7 @@ const MembershipPage = () => {
   const [coinOnly, setCoinOnly] = useState(false);
   const [closedPopup, setClosedPopup] = useState<Show | null>(null);
   const [myOrderedShows, setMyOrderedShows] = useState<Set<string>>(new Set());
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   const fetchMyOrders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
