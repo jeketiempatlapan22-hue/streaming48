@@ -55,7 +55,8 @@ serve(async (req) => {
     const typeLabel = order_type === 'replay' ? 'REPLAY' : order_type === 'show' ? 'SHOW' : 'MEMBERSHIP';
     const emoji = order_type === 'replay' ? '🔄' : order_type === 'show' ? '🎫' : '🎬';
 
-    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+    const scheduleInfo = schedule_date ? `\n📅 Jadwal: ${escapeMarkdown(schedule_date)}${schedule_time ? ' ' + escapeMarkdown(schedule_time) : ''}` : '';
+    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}${scheduleInfo}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
 
     const inline_keyboard = [[
       { text: '✅ Konfirmasi', callback_data: `approve_sub_${shortId}` },
