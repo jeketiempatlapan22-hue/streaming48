@@ -29,7 +29,8 @@ const CoinShop = () => {
   const [purchaseStep, setPurchaseStep] = useState<"phone" | "qris" | "upload" | "done">("phone");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [uploading, setUploading] = useState(false);
-  const proofInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [redeemingShow, setRedeemingShow] = useState<string | null>(null);
   const [redeemResult, setRedeemResult] = useState<{ token_code: string; remaining_balance: number; access_password?: string } | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -273,25 +274,18 @@ const CoinShop = () => {
           )}
           {purchaseStep === "upload" && (
             <div className="space-y-3">
-              <input
-                ref={proofInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e: any) => {
-                  handleUploadProof(e);
-                  if (proofInputRef.current) proofInputRef.current.value = "";
-                }}
-              />
-              <button
-                type="button"
-                className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border p-8 hover:border-primary transition-colors"
-                onClick={() => proofInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Upload className={`h-8 w-8 ${uploading ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-                <span className="text-sm text-muted-foreground">{uploading ? "Mengupload..." : "Tap untuk upload bukti bayar"}</span>
-              </button>
+              <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e: any) => { handleUploadProof(e); if (galleryInputRef.current) galleryInputRef.current.value = ""; }} />
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e: any) => { handleUploadProof(e); if (cameraInputRef.current) cameraInputRef.current.value = ""; }} />
+              <div className="flex gap-2">
+                <button type="button" className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border p-6 hover:border-primary transition-colors" onClick={() => galleryInputRef.current?.click()} disabled={uploading}>
+                  <Upload className={`h-6 w-6 ${uploading ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs text-muted-foreground">{uploading ? "..." : "Galeri"}</span>
+                </button>
+                <button type="button" className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border p-6 hover:border-primary transition-colors" onClick={() => cameraInputRef.current?.click()} disabled={uploading}>
+                  <span className={`text-2xl ${uploading ? "animate-pulse" : ""}`}>📷</span>
+                  <span className="text-xs text-muted-foreground">{uploading ? "..." : "Kamera"}</span>
+                </button>
+              </div>
             </div>
           )}
         </DialogContent>
