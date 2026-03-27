@@ -277,6 +277,13 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode");
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  // Global IP rate limit: 600 requests/min across ALL modes (generous for legitimate viewers)
+  if (!edgeRateLimit(`global:${clientIp}`, 600, 60000)) {
+    const isStream = mode === "play" || mode === "sub";
+    return getRateLimitResponse(isStream);
+  }
 
   try {
     // MODE: generate (POST) - generates signed URLs for m3u8 AND youtube
@@ -284,8 +291,7 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { token_code, playlist_id, fingerprint } = body;
 
-      const genClientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (token_code && !edgeRateLimit(`gen:${genClientIp}`, 60, 60000)) {
+      if (token_code && !edgeRateLimit(`gen:${clientIp}`, 60, 60000)) {
         return getRateLimitResponse();
       }
 
