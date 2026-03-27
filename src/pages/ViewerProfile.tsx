@@ -63,7 +63,7 @@ const ViewerProfile = () => {
   const handleSave = async () => {
     if (!authUser || !username.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, username: username.trim() }, { onConflict: "id" });
+    const { error } = await supabase.from("profiles").upsert({ id: authUser.id, username: username.trim() }, { onConflict: "id" });
     setSaving(false);
     if (error) toast.error(error.message);
     else { setOriginalUsername(username.trim()); toast.success("Username diperbarui!"); }
