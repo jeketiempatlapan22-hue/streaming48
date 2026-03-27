@@ -546,8 +546,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const ytEmbedSrc = useMemo(() => {
     if (playlistType !== "youtube") return "";
     const videoId = extractVideoId(playlistUrl);
-    return `https://www.youtube.com/embed/${videoId}?autoplay=${autoPlay ? 1 : 0}&rel=0&modestbranding=1&playsinline=1&enablejsapi=0`;
-  }, [playlistType, playlistUrl, autoPlay, extractVideoId]);
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=0`;
+  }, [playlistType, playlistUrl, extractVideoId]);
 
   const cloudflareSrc = useMemo(() => {
     if (playlistType !== "cloudflare") return "";
