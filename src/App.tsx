@@ -1,10 +1,11 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = lazy(() => import("./pages/Index"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
@@ -25,10 +26,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
-// 🔧 MAINTENANCE MODE — ubah ke true untuk tutup sementara, false untuk buka kembali
-const MAINTENANCE_MODE = false;
-
-const MaintenancePage = () => (
+const MaintenancePage = ({ message }: { message?: string }) => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center gap-6">
     <div className="h-24 w-24 rounded-full border-2 border-border/60 overflow-hidden shadow-lg">
       <img src="/logo.png" alt="RealTime48" className="h-full w-full object-cover" />
@@ -39,7 +37,7 @@ const MaintenancePage = () => (
       </h1>
       <p className="text-lg font-semibold text-foreground">🔧 Sedang Maintenance</p>
       <p className="text-sm text-muted-foreground">
-        Website sedang dalam perbaikan sementara. Silakan kembali dalam beberapa menit.
+        {message || "Website sedang dalam perbaikan sementara. Silakan kembali dalam beberapa menit."}
       </p>
     </div>
   </div>
@@ -64,22 +62,56 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => {
-  // Maintenance mode: block semua kecuali admin
-  if (MAINTENANCE_MODE) {
-    return (
-      <ErrorBoundary>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminLogin /></Suspense>} />
-            <Route path="/admin/dashboard" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
-            <Route path="*" element={<MaintenancePage />} />
-          </Routes>
-        </BrowserRouter>
-      </ErrorBoundary>
-    );
+/** Wrapper that checks maintenance_mode from site_settings and blocks non-admin routes */
+const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
+  const [maintenance, setMaintenance] = useState<boolean | null>(null);
+  const [maintenanceMsg, setMaintenanceMsg] = useState("");
+  const location = useLocation();
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", ["maintenance_mode", "maintenance_message"]);
+
+        const modeRow = data?.find((r: any) => r.key === "maintenance_mode");
+        const msgRow = data?.find((r: any) => r.key === "maintenance_message");
+        setMaintenance(modeRow?.value === "true");
+        setMaintenanceMsg(msgRow?.value || "");
+      } catch {
+        setMaintenance(false);
+      }
+    };
+    check();
+
+    // Listen for realtime changes to instantly toggle
+    const channel = supabase
+      .channel("maintenance-mode")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, (payload) => {
+        const row = payload.new as any;
+        if (row?.key === "maintenance_mode") setMaintenance(row.value === "true");
+        if (row?.key === "maintenance_message") setMaintenanceMsg(row.value || "");
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Still loading
+  if (maintenance === null) return <PageLoader />;
+
+  // Admin routes always pass through
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  if (maintenance && !isAdminRoute) {
+    return <MaintenancePage message={maintenanceMsg} />;
   }
 
+  return <>{children}</>;
+};
+
+const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -87,26 +119,28 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/admin" element={<AdminLogin />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/auth" element={<ViewerAuth />} />
-                <Route path="/live" element={<LivePage />} />
-                <Route path="/coins" element={<CoinShop />} />
-                <Route path="/schedule" element={<SchedulePage />} />
-                <Route path="/replay" element={<ReplayPage />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/install" element={<InstallPage />} />
-                <Route path="/profile" element={<ViewerProfile />} />
-                <Route path="/membership" element={<MembershipPage />} />
-                <Route path="/faq" element={<FaqPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            <MaintenanceGate>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/admin" element={<AdminLogin />} />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/auth" element={<ViewerAuth />} />
+                  <Route path="/live" element={<LivePage />} />
+                  <Route path="/coins" element={<CoinShop />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route path="/replay" element={<ReplayPage />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/install" element={<InstallPage />} />
+                  <Route path="/profile" element={<ViewerProfile />} />
+                  <Route path="/membership" element={<MembershipPage />} />
+                  <Route path="/faq" element={<FaqPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </MaintenanceGate>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
