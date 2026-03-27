@@ -63,7 +63,8 @@ serve(async (req) => {
       { text: '❌ Tolak', callback_data: `reject_sub_${shortId}` },
     ]];
 
-    const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
+    const waScheduleInfo = schedule_date ? `\n📅 Jadwal: ${schedule_date}${schedule_time ? ' ' + schedule_time : ''}` : '';
+    const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}${waScheduleInfo}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
 
     const bucket = proof_bucket || 'payment-proofs';
     let photoSent = false;
