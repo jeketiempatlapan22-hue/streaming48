@@ -586,22 +586,51 @@ async function processCoinOrder(supabase: any, botToken: string, chatId: string,
 async function processSubscriptionOrder(supabase: any, botToken: string, chatId: string, order: any, action: 'approve' | 'reject', isBulk: boolean): Promise<{ success: boolean; message: string }> {
   try {
     const sid = order.short_id || order.id.substring(0, 6);
-    const { data: show } = await supabase.from('shows').select('title, group_link').eq('id', order.show_id).single();
+    const { data: show } = await supabase.from('shows').select('title, group_link, is_subscription, access_password').eq('id', order.show_id).single();
     const showTitle = show?.title || 'Unknown Show';
 
     if (action === 'approve') {
-      const { data: confirmed } = await supabase.from('subscription_orders').update({ status: 'confirmed' }).eq('id', order.id).eq('status', 'pending').select('id').maybeSingle();
-      if (!confirmed) {
-        const msg = `Subscription ${sid} sudah diproses.`;
-        if (!isBulk) await sendTelegramMessage(botToken, chatId, `⚠️ Subscription \`${escapeMarkdown(sid)}\` sudah diproses\\.`);
-        return { success: false, message: msg };
+      // Use confirm_regular_order RPC which handles both membership and regular shows
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_regular_order', { _order_id: order.id });
+      const result = typeof rpcResult === 'string' ? (() => { try { return JSON.parse(rpcResult); } catch { return null; } })() : rpcResult;
+
+      if (rpcError || !result?.success) {
+        const errMsg = result?.error || rpcError?.message || 'Gagal konfirmasi';
+        if (!isBulk) await sendTelegramMessage(botToken, chatId, `⚠️ Order \`${escapeMarkdown(sid)}\`: ${escapeMarkdown(errMsg)}`);
+        return { success: false, message: errMsg };
       }
-      if (!isBulk) await sendTelegramMessage(botToken, chatId, `✅ Subscription \`${escapeMarkdown(sid)}\` untuk "${escapeMarkdown(showTitle)}" berhasil dikonfirmasi\\!`);
-      return { success: true, message: `✅ Subscription ${sid} untuk "${showTitle}" dikonfirmasi!` };
+
+      // Send WhatsApp notification to user
+      if (order.phone) {
+        const siteUrl = 'https://streaming48.lovable.app';
+        if (result.type === 'regular' && result.token_code) {
+          // Regular show: send live link + token + replay info
+          const liveLink = `${siteUrl}/live?t=${result.token_code}`;
+          let waMsg = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showTitle}*\n🎫 Token: ${result.token_code}\n📺 Link Nonton: ${liveLink}\n`;
+          if (show?.access_password) {
+            waMsg += `\n🔄 *Akses Replay:*\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi: ${show.access_password}\n`;
+          }
+          waMsg += `\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini.\n\nTerima kasih! 🎉`;
+          await sendFonnteWhatsApp(order.phone, waMsg);
+        } else if (result.type === 'subscription') {
+          // Membership: send group link
+          let waMsg = `✅ *Membership Dikonfirmasi!*\n\n🎭 Show: *${showTitle}*\n`;
+          if (show?.group_link) waMsg += `🔗 Link Grup: ${show.group_link}\n`;
+          waMsg += `\nTerima kasih telah berlangganan! 🎉`;
+          await sendFonnteWhatsApp(order.phone, waMsg);
+        }
+      }
+
+      const tokenInfo = result.token_code ? ` Token: \`${escapeMarkdown(result.token_code)}\`` : '';
+      if (!isBulk) await sendTelegramMessage(botToken, chatId, `✅ Order \`${escapeMarkdown(sid)}\` untuk "${escapeMarkdown(showTitle)}" dikonfirmasi\\!${tokenInfo}`);
+      return { success: true, message: `✅ Order ${sid} untuk "${showTitle}" dikonfirmasi!${result.token_code ? ` Token: ${result.token_code}` : ''}` };
     } else {
       await supabase.from('subscription_orders').update({ status: 'rejected' }).eq('id', order.id).eq('status', 'pending');
-      if (!isBulk) await sendTelegramMessage(botToken, chatId, `❌ Subscription \`${escapeMarkdown(sid)}\` untuk "${escapeMarkdown(showTitle)}" telah ditolak\\.`);
-      return { success: true, message: `❌ Subscription ${sid} ditolak.` };
+      if (order.phone) {
+        await sendFonnteWhatsApp(order.phone, `❌ Maaf, pesanan kamu untuk *${showTitle}* tidak dapat dikonfirmasi.\n\nSilakan hubungi admin jika ada pertanyaan.`);
+      }
+      if (!isBulk) await sendTelegramMessage(botToken, chatId, `❌ Order \`${escapeMarkdown(sid)}\` untuk "${escapeMarkdown(showTitle)}" ditolak\\.`);
+      return { success: true, message: `❌ Order ${sid} ditolak.` };
     }
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : 'Unknown';
