@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Clock, Trash2, Send, Image, SendHorizonal, Coins, Copy, Mail, Save, Search, UserPlus, Phone, Ticket, Link, KeyRound, RotateCcw } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Trash2, Send, Image, SendHorizonal, Coins, Copy, Mail, Save, Search, UserPlus, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Order {
@@ -173,32 +173,30 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
     }
   };
 
-  const sendShowLink = async (order: Order) => {
+  const sendAllLinks = async (order: Order) => {
     const showInfo = shows[order.show_id];
     const token = orderTokens[order.id];
     if (!order.phone || !showInfo) { toast({ title: "Data tidak lengkap", variant: "destructive" }); return; }
-    setSendingWaAction("show-" + order.id);
+    setSendingWaAction("all-" + order.id);
     const siteUrl = window.location.origin;
-    let message = `📺 *Link Show: ${showInfo.title}*\n\n`;
+    let message = `📺 *Info Show: ${showInfo.title}*\n\n`;
+
     if (token) {
       const liveLink = `${siteUrl}/live?t=${token.code}`;
-      message += `🎫 Token: \`${token.code}\`\n📺 Link Nonton: ${liveLink}\n\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini.`;
+      message += `🎫 Token: \`${token.code}\`\n📺 Link Nonton: ${liveLink}\n`;
     } else if (showInfo.is_subscription && showInfo.group_link) {
-      message += `🔗 Link Grup: ${showInfo.group_link}`;
-    } else {
-      message += `ℹ️ Belum ada token untuk pesanan ini.`;
+      message += `🔗 Link Grup: ${showInfo.group_link}\n`;
     }
-    await sendWhatsApp(order.phone, message);
-    setSendingWaAction(null);
-  };
 
-  const sendReplayLink = async (order: Order) => {
-    const showInfo = shows[order.show_id];
-    if (!order.phone || !showInfo) { toast({ title: "Data tidak lengkap", variant: "destructive" }); return; }
-    if (!showInfo.access_password) { toast({ title: "Show ini belum memiliki sandi replay", variant: "destructive" }); return; }
-    setSendingWaAction("replay-" + order.id);
-    const siteUrl = window.location.origin;
-    const message = `🔄 *Akses Replay: ${showInfo.title}*\n\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi Replay: \`${showInfo.access_password}\`\n\nGunakan sandi di atas untuk membuka replay show ini. Selamat menonton! 🎬`;
+    if (showInfo.access_password) {
+      message += `\n🔄 *Akses Replay:*\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi Replay: \`${showInfo.access_password}\`\n`;
+    }
+
+    if (token) {
+      message += `\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini.`;
+    }
+    message += `\nTerima kasih! 🎉`;
+
     await sendWhatsApp(order.phone, message);
     setSendingWaAction(null);
   };
@@ -592,21 +590,12 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
                 )}
                 {order.status === "confirmed" && (
                   <div className="w-full space-y-1.5">
-                    {/* Quick-send buttons */}
-                    <div className="flex flex-wrap gap-1">
-                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                        disabled={sendingWaAction === "show-" + order.id || !order.phone}
-                        onClick={() => sendShowLink(order)}>
-                        <Link className="h-3 w-3" /> {sendingWaAction === "show-" + order.id ? "Mengirim..." : orderTokens[order.id] ? "Kirim Link Show" : shows[order.show_id]?.is_subscription ? "Kirim Link Grup" : "Kirim Info Show"}
-                      </Button>
-                      {shows[order.show_id]?.access_password && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                          disabled={sendingWaAction === "replay-" + order.id || !order.phone}
-                          onClick={() => sendReplayLink(order)}>
-                          <KeyRound className="h-3 w-3" /> {sendingWaAction === "replay-" + order.id ? "Mengirim..." : "Kirim Link Replay"}
-                        </Button>
-                      )}
-                    </div>
+                    {/* Single quick-send button for all links */}
+                    <Button size="sm" variant="outline" className="h-7 w-full text-xs gap-1"
+                      disabled={sendingWaAction === "all-" + order.id || !order.phone}
+                      onClick={() => sendAllLinks(order)}>
+                      <Send className="h-3 w-3" /> {sendingWaAction === "all-" + order.id ? "Mengirim..." : "Kirim Link & Info Show"}
+                    </Button>
                     {/* Custom message */}
                     <Textarea value={waMessages[order.id] || ""} onChange={(e) => setWaMessages((prev) => ({ ...prev, [order.id]: e.target.value }))}
                       placeholder="Tulis pesan kustom untuk user ini..." className="h-16 bg-background text-xs" />
