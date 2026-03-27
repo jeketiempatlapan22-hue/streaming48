@@ -22,7 +22,7 @@ export interface VideoPlayerHandle {
 
 const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist, autoPlay = true, watermarkUrl, tokenCode }, ref) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [isLoading, setIsLoading] = useState(false); // Start false - no delay
+  const [isLoading, setIsLoading] = useState(false);
   const [isSwitchingQuality, setIsSwitchingQuality] = useState(false);
   const [qualities, setQualities] = useState<{ label: string; index: number; ytKey?: string }[]>([]);
   const [currentQuality, setCurrentQuality] = useState(-1);
@@ -30,6 +30,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [ytMuted, setYtMuted] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [ytFallback, setYtFallback] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const ytPlayerRef = useRef<any>(null);
@@ -38,6 +39,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const hlsInitRef = useRef(false);
+
+  // Stable references to avoid re-triggering effects on every render
+  const playlistUrl = playlist.url;
+  const playlistType = playlist.type;
 
   const isYTReady = useCallback(() => {
     const p = ytPlayerRef.current;
