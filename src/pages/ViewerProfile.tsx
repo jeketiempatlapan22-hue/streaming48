@@ -73,6 +73,18 @@ const ViewerProfile = () => {
 
   const copyText = (text: string) => { navigator.clipboard.writeText(text); toast.success("Disalin!"); };
 
+  const saveOrderPhone = async (orderId: string) => {
+    const newPhone = editingPhone[orderId]?.trim();
+    if (!newPhone) return;
+    setSavingPhone(orderId);
+    const { error } = await (supabase as any).from("subscription_orders").update({ phone: newPhone }).eq("id", orderId);
+    setSavingPhone(null);
+    if (error) { toast.error("Gagal menyimpan nomor HP"); return; }
+    setSubOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, phone: newPhone } : o));
+    setEditingPhone((prev) => { const n = { ...prev }; delete n[orderId]; return n; });
+    toast.success("Nomor HP berhasil diperbarui!");
+  };
+
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       confirmed: "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]",
