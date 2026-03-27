@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     // Mark as completed FIRST (one-time-use enforcement) to prevent race conditions
     const { error: markErr } = await supabase.from('password_reset_requests')
-      .update({ status: 'completed', new_password: '[user_set]', secure_token: null })
+      .update({ status: 'completed', secure_token: null })
       .eq('id', request.id)
       .eq('status', 'approved');
 

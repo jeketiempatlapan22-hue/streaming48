@@ -348,7 +348,6 @@ export type Database = {
           created_at: string
           id: string
           identifier: string
-          new_password: string | null
           phone: string
           processed_at: string | null
           secure_token: string | null
@@ -360,7 +359,6 @@ export type Database = {
           created_at?: string
           id?: string
           identifier?: string
-          new_password?: string | null
           phone?: string
           processed_at?: string | null
           secure_token?: string | null
@@ -372,7 +370,6 @@ export type Database = {
           created_at?: string
           id?: string
           identifier?: string
-          new_password?: string | null
           phone?: string
           processed_at?: string | null
           secure_token?: string | null
@@ -1069,10 +1066,12 @@ export type Database = {
         Args: { _fingerprint: string; _token_code: string }
         Returns: undefined
       }
-      request_password_reset: {
-        Args: { _identifier: string; _new_password?: string }
-        Returns: Json
-      }
+      request_password_reset:
+        | { Args: { _identifier: string }; Returns: Json }
+        | {
+            Args: { _identifier: string; _new_password?: string }
+            Returns: Json
+          }
       self_reset_token_session: {
         Args: { _fingerprint: string; _token_code: string }
         Returns: Json
