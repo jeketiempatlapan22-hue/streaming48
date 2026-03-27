@@ -125,8 +125,10 @@ const SchedulePage = () => {
     }
     let orderId: string | null = null;
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id || null;
       const { data: orderData, error: insertErr } = await supabase.from("subscription_orders").insert({
-        show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null,
+        show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null, user_id: uid,
       }).select("id").single();
       if (insertErr) console.warn("Order insert error:", insertErr.message);
       orderId = orderData?.id || null;
@@ -261,11 +263,11 @@ const SchedulePage = () => {
                 ) : (
                   <button
                     type="button"
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/10 px-5 py-5 text-base font-semibold text-primary transition hover:border-primary hover:bg-primary/20"
                     onClick={() => galleryInputRef.current?.click()}
                     disabled={uploadingProof}
                   >
-                    <Upload className="h-4 w-4" /> {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran (opsional)"}
+                    <Upload className="h-5 w-5" /> {uploadingProof ? "Mengupload..." : "📷 Upload Bukti Pembayaran (opsional)"}
                   </button>
                 )}
                 <div className="rounded-xl border border-border bg-card p-4">

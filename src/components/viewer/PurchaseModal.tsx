@@ -95,12 +95,12 @@ const PurchaseModal = ({
             <p className="text-xs text-muted-foreground text-center">Setelah melakukan pembayaran, upload bukti transfer:</p>
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/10 px-5 py-5 text-base font-semibold text-primary transition hover:border-primary hover:bg-primary/20"
               onClick={() => galleryInputRef.current?.click()}
               disabled={uploadingProof}
             >
-              <Upload className="h-4 w-4" />
-              {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran"}
+              <Upload className="h-5 w-5" />
+              {uploadingProof ? "Mengupload..." : "📷 Upload Bukti Pembayaran"}
             </button>
           </div>
         )}
