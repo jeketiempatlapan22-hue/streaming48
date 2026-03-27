@@ -40,7 +40,14 @@ function edgeRateLimit(key: string, maxRequests: number, windowMs: number): bool
   return true;
 }
 
-function getRateLimitResponse(): Response {
+function getRateLimitResponse(isStreamRequest = false): Response {
+  // For stream requests (play/sub), return a gentler response so HLS players retry gracefully
+  if (isStreamRequest) {
+    return new Response(
+      "#EXTM3U\n#EXT-X-TARGETDURATION:5\n#EXT-X-MEDIA-SEQUENCE:0\n",
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/vnd.apple.mpegurl", "Cache-Control": "no-cache", "Retry-After": "5" } }
+    );
+  }
   return new Response(
     JSON.stringify({ error: "Terlalu banyak request. Coba lagi nanti." }),
     { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "30" } }
