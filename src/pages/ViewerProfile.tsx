@@ -163,9 +163,43 @@ const ViewerProfile = () => {
             subOrders.length === 0 ? <p className="py-6 text-center text-xs text-muted-foreground">Belum ada langganan</p> : (
               <div className="space-y-2">
                 {subOrders.map((o) => (
-                  <div key={o.id} className="flex items-center justify-between rounded-lg bg-background p-3">
-                    <div className="min-w-0 flex-1"><p className="text-xs font-medium text-foreground">{(o as any).shows?.title || "Show"}</p><p className="text-[10px] text-muted-foreground">{o.payment_method} • {new Date(o.created_at).toLocaleString("id-ID")}</p></div>
-                    {statusBadge(o.status)}
+                  <div key={o.id} className="rounded-lg bg-background p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-foreground">{(o as any).shows?.title || "Show"}</p>
+                        <p className="text-[10px] text-muted-foreground">{o.payment_method} • {new Date(o.created_at).toLocaleString("id-ID")}</p>
+                      </div>
+                      {statusBadge(o.status)}
+                    </div>
+                    {/* Phone display & edit */}
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                      {editingPhone[o.id] !== undefined ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <Input
+                            value={editingPhone[o.id]}
+                            onChange={(e) => setEditingPhone((prev) => ({ ...prev, [o.id]: e.target.value }))}
+                            placeholder="08xxxxxxxxxx"
+                            className="h-7 text-xs flex-1"
+                          />
+                          <Button size="sm" variant="outline" className="h-7 px-2" disabled={savingPhone === o.id} onClick={() => saveOrderPhone(o.id)}>
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <button className="text-[10px] text-muted-foreground hover:text-foreground px-1" onClick={() => setEditingPhone((prev) => { const n = { ...prev }; delete n[o.id]; return n; })}>Batal</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingPhone((prev) => ({ ...prev, [o.id]: o.phone || "" }))}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {o.phone || <span className="italic text-muted-foreground/60">Belum ada HP</span>}
+                          <Pencil className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </div>
+                    {o.status === "pending" && !o.phone && (
+                      <p className="text-[10px] text-[hsl(var(--warning))]">⚠️ Tambahkan nomor HP agar admin bisa mengirim link akses!</p>
+                    )}
                   </div>
                 ))}
               </div>
