@@ -991,6 +991,7 @@ export type Database = {
       cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       confirm_coin_order: { Args: { _order_id: string }; Returns: Json }
+      confirm_regular_order: { Args: { _order_id: string }; Returns: Json }
       create_token_session: {
         Args: { _fingerprint: string; _token_code: string; _user_agent: string }
         Returns: Json

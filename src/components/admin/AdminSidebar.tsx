@@ -1,5 +1,5 @@
 import logo from "@/assets/logo.png";
-import { Radio, Key, Monitor, Settings, LogOut, Theater, FileText, ClipboardList, Coins, Package, Shield, Activity, ScrollText, UsersRound, UserCog, Image, BarChart3, Gauge } from "lucide-react";
+import { Radio, Key, Monitor, Settings, LogOut, Theater, FileText, ClipboardList, Coins, Package, Shield, Activity, ScrollText, UsersRound, UserCog, Image, BarChart3, Gauge, Ticket } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface AdminSidebarProps {
@@ -14,7 +14,8 @@ const sections = [
   { id: "live", label: "Live & Playlist", icon: Radio },
   { id: "tokens", label: "Token Factory", icon: Key },
   { id: "shows", label: "Show Manager", icon: Theater },
-  { id: "orders", label: "Order Langganan", icon: ClipboardList },
+  { id: "orders", label: "Order Membership", icon: ClipboardList },
+  { id: "show-orders", label: "Order Show", icon: Ticket },
   { id: "coin-packages", label: "Paket Koin", icon: Package },
   { id: "coin-orders", label: "Order Koin", icon: Coins },
   { id: "descriptions", label: "Deskripsi LP", icon: FileText },
