@@ -19,12 +19,13 @@ Deno.serve(async (req) => {
     const results = { coin_proofs_deleted: 0, payment_proofs_deleted: 0, errors: [] as string[] };
 
     // 1. Clean confirmed coin_orders with payment proofs (older than 7 days)
+    // Clean confirmed coin_orders with payment proofs (older than 10 hours)
     const { data: coinOrders } = await supabase
       .from("coin_orders")
       .select("id, payment_proof_url")
       .eq("status", "confirmed")
       .not("payment_proof_url", "is", null)
-      .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      .lt("created_at", new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString());
 
     if (coinOrders?.length) {
       for (const order of coinOrders) {
