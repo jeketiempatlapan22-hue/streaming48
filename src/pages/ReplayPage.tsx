@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/imageCompressor";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +53,7 @@ const ReplayPage = () => {
   // QRIS flow state
   const [qrisStep, setQrisStep] = useState<"scan" | "upload" | "done">("scan");
   const [uploadingProof, setUploadingProof] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -397,16 +398,20 @@ const ReplayPage = () => {
                     <p className="text-xs text-muted-foreground">Harga</p>
                     <p className="text-lg font-bold text-foreground">{purchaseShow?.price}</p>
                   </div>
+                  <input
+                    ref={proofInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.heic,.heif"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      handleUploadProof(e as any);
+                      if (proofInputRef.current) proofInputRef.current.value = "";
+                    }}
+                  />
                   <button
                     type="button"
                     className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
-                    onClick={() => {
-                      const input = document.createElement("input");
-                       input.type = "file";
-                       
-                      input.onchange = (e) => handleUploadProof(e as any);
-                      input.click();
-                    }}
+                    onClick={() => proofInputRef.current?.click()}
                     disabled={uploadingProof}
                   >
                     <Upload className="h-4 w-4" />

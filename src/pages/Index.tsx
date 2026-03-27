@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/imageCompressor";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,6 +60,7 @@ const Index = () => {
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
   const [purchaseStep, setPurchaseStep] = useState<"qris" | "upload" | "info" | "done">("qris");
   const [uploadingProof, setUploadingProof] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
   const [phone, setPhone] = useState("");
@@ -817,16 +818,20 @@ const Index = () => {
                     QRIS belum tersedia
                   </div>
                 )}
+                <input
+                  ref={proofInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.heic,.heif"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    handleUploadProof(e as any);
+                    if (proofInputRef.current) proofInputRef.current.value = "";
+                  }}
+                />
                 <button
                   type="button"
                   className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                     input.type = "file";
-                    
-                    input.onchange = (e) => handleUploadProof(e as any);
-                    input.click();
-                  }}
+                  onClick={() => proofInputRef.current?.click()}
                   disabled={uploadingProof}
                 >
                   <Upload className="h-4 w-4" />
@@ -902,13 +907,7 @@ const Index = () => {
                 <button
                   type="button"
                   className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                     input.type = "file";
-                      
-                    input.onchange = (e) => handleUploadProof(e as any);
-                    input.click();
-                  }}
+                  onClick={() => proofInputRef.current?.click()}
                   disabled={uploadingProof}
                 >
                   <Upload className="h-4 w-4" />

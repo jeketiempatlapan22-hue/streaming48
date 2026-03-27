@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { compressImage } from "@/lib/imageCompressor";
 import logo from "@/assets/logo.png";
@@ -29,6 +29,7 @@ const CoinShop = () => {
   const [purchaseStep, setPurchaseStep] = useState<"phone" | "qris" | "upload" | "done">("phone");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [uploading, setUploading] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [redeemingShow, setRedeemingShow] = useState<string | null>(null);
   const [redeemResult, setRedeemResult] = useState<{ token_code: string; remaining_balance: number; access_password?: string } | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -272,16 +273,20 @@ const CoinShop = () => {
           )}
           {purchaseStep === "upload" && (
             <div className="space-y-3">
+              <input
+                ref={proofInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.heic,.heif"
+                style={{ display: "none" }}
+                onChange={(e: any) => {
+                  handleUploadProof(e);
+                  if (proofInputRef.current) proofInputRef.current.value = "";
+                }}
+              />
               <button
                 type="button"
                 className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border p-8 hover:border-primary transition-colors"
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  
-                  input.onchange = (e: any) => handleUploadProof(e);
-                  input.click();
-                }}
+                onClick={() => proofInputRef.current?.click()}
                 disabled={uploading}
               >
                 <Upload className={`h-8 w-8 ${uploading ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
