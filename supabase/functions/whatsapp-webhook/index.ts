@@ -565,16 +565,48 @@ async function processCoinOrder(supabase: any, order: any, action: 'approve' | '
 async function processSubOrder(supabase: any, order: any, action: 'approve' | 'reject'): Promise<string> {
   try {
     const sid = order.short_id || order.id.substring(0, 6);
-    const { data: show } = await supabase.from('shows').select('title').eq('id', order.show_id).single();
+    const { data: show } = await supabase.from('shows').select('title, group_link, is_subscription, access_password').eq('id', order.show_id).single();
     const showTitle = show?.title || 'Unknown Show';
 
     if (action === 'approve') {
-      const { data: confirmed } = await supabase.from('subscription_orders').update({ status: 'confirmed' }).eq('id', order.id).eq('status', 'pending').select('id').maybeSingle();
-      if (!confirmed) return `⚠️ Subscription ${sid} sudah diproses.`;
-      return `✅ Subscription ${sid} untuk "${showTitle}" dikonfirmasi!`;
+      // Use confirm_regular_order RPC which handles both membership and regular shows
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_regular_order', { _order_id: order.id });
+      const result = typeof rpcResult === 'string' ? (() => { try { return JSON.parse(rpcResult); } catch { return null; } })() : rpcResult;
+
+      if (rpcError || !result?.success) {
+        return `⚠️ Order ${sid}: ${result?.error || rpcError?.message || 'Gagal konfirmasi'}`;
+      }
+
+      // Send WhatsApp notification to user
+      const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+      if (FONNTE_TOKEN && order.phone) {
+        const siteUrl = 'https://streaming48.lovable.app';
+        if (result.type === 'regular' && result.token_code) {
+          const liveLink = `${siteUrl}/live?t=${result.token_code}`;
+          let waMsg = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showTitle}*\n🎫 Token: ${result.token_code}\n📺 Link Nonton: ${liveLink}\n`;
+          if (show?.access_password) {
+            waMsg += `\n🔄 *Akses Replay:*\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi: ${show.access_password}\n`;
+          }
+          waMsg += `\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini.\n\nTerima kasih! 🎉`;
+          await sendFonnteMessage(FONNTE_TOKEN, order.phone, waMsg);
+        } else if (result.type === 'subscription') {
+          let waMsg = `✅ *Membership Dikonfirmasi!*\n\n🎭 Show: *${showTitle}*\n`;
+          if (show?.group_link) waMsg += `🔗 Link Grup: ${show.group_link}\n`;
+          waMsg += `\nTerima kasih telah berlangganan! 🎉`;
+          await sendFonnteMessage(FONNTE_TOKEN, order.phone, waMsg);
+        }
+      }
+
+      const tokenInfo = result.token_code ? ` Token: ${result.token_code}` : '';
+      return `✅ Order ${sid} untuk "${showTitle}" dikonfirmasi!${tokenInfo}`;
     } else {
       await supabase.from('subscription_orders').update({ status: 'rejected' }).eq('id', order.id).eq('status', 'pending');
-      return `❌ Subscription ${sid} untuk "${showTitle}" ditolak.`;
+      // Notify user of rejection
+      const FONNTE_TOKEN = Deno.env.get('FONNTE_API_TOKEN');
+      if (FONNTE_TOKEN && order.phone) {
+        await sendFonnteMessage(FONNTE_TOKEN, order.phone, `❌ Maaf, pesanan kamu untuk *${showTitle}* tidak dapat dikonfirmasi.\n\nSilakan hubungi admin jika ada pertanyaan.`);
+      }
+      return `❌ Order ${sid} untuk "${showTitle}" ditolak.`;
     }
   } catch (e) {
     return `⚠️ Error: ${e instanceof Error ? e.message : 'Unknown'}`;
