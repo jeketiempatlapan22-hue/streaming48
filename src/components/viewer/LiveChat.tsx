@@ -40,7 +40,7 @@ const ModeratorBadge = () => (
   </span>
 );
 
-const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin, onDelete, onBlock, onToggleMod, formatTime }: {
+const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin, onDelete, onBlock, onToggleMod, onBanUser, formatTime }: {
   msg: ChatMessage;
   isAdmin: boolean;
   isChatMod: boolean;
@@ -49,6 +49,7 @@ const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin
   onDelete: (id: string) => void;
   onBlock?: (tokenId: string) => void;
   onToggleMod?: (username: string, isMod: boolean) => void;
+  onBanUser?: (username: string) => void;
   formatTime: (d: string) => string;
 }) => {
   const canModerate = isAdmin || isChatMod;
