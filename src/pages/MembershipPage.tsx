@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Crown, Sparkles, CheckCircle, Star, Upload, Users, Calendar, Coins, AlertTriangle } from "lucide-react";
+import { Crown, Sparkles, CheckCircle, Star, Upload, Users, Calendar, Coins, AlertTriangle, MessageCircle, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
