@@ -258,14 +258,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
     const videoId = extractVideoId(playlistUrl);
 
-    // Fallback: if YT API doesn't fire onReady within 6 seconds, use direct iframe
+    // Fallback: if YT API doesn't fire onReady within 3 seconds, use direct iframe
     ytFallbackTimerRef.current = setTimeout(() => {
       if (destroyed || ytReadyRef.current) return;
       console.warn("[VideoPlayer] YT IFrame API timeout, switching to direct iframe embed");
       setYtFallback(true);
       setIsLoading(false);
       setIsPlaying(autoPlay);
-    }, 6000);
+    }, 3000);
 
     const loadYTApi = () => {
       if ((window as any).YT && (window as any).YT.Player) {
@@ -297,8 +297,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         clearInterval(checkInterval);
         if (!destroyed) createYTPlayer();
       };
-      // Cleanup interval after 6s
-      setTimeout(() => clearInterval(checkInterval), 6500);
+      // Cleanup interval after 3s
+      setTimeout(() => clearInterval(checkInterval), 3500);
     };
 
     const createYTPlayer = () => {
@@ -363,7 +363,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
                 const iframe = container.querySelector("iframe");
                 if (iframe) {
                   iframe.removeAttribute("title");
-                  iframe.setAttribute("referrerpolicy", "no-referrer");
                 }
               } catch {}
 
@@ -593,7 +592,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
             className={`h-full w-full border-0 ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            referrerPolicy="no-referrer"
           />
         </>
       )}
