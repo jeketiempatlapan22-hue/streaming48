@@ -388,12 +388,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
               try {
                 const iframe = container.querySelector("iframe");
-                if (iframe) {
-                  iframe.removeAttribute("title");
-                  // Hide YouTube URL from DOM inspection
-                  Object.defineProperty(iframe, 'src', { get: () => 'about:blank', set: (v: string) => { iframe.setAttribute('src', v); }, configurable: true });
-                  Object.defineProperty(iframe, 'currentSrc', { get: () => '', configurable: true });
-                }
+                if (iframe) iframe.removeAttribute("title");
               } catch {}
 
               if (autoPlay) {
