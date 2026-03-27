@@ -43,13 +43,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: orderData } = await supabase
-      .from('subscription_orders')
-      .select('short_id')
-      .eq('id', order_id)
-      .single();
-
-    const shortId = orderData?.short_id || order_id;
+    let shortId = order_id;
+    if (order_id && !String(order_id).startsWith('manual_')) {
+      const { data: orderData } = await supabase
+        .from('subscription_orders')
+        .select('short_id')
+        .eq('id', order_id)
+        .single();
+      shortId = orderData?.short_id || order_id;
+    }
     const typeLabel = order_type === 'replay' ? 'REPLAY' : order_type === 'show' ? 'SHOW' : 'MEMBERSHIP';
     const emoji = order_type === 'replay' ? '🔄' : order_type === 'show' ? '🎫' : '🎬';
 
