@@ -70,6 +70,52 @@ const SiteSettingsManager = () => {
         </div>
       ))}
 
+      {/* Maintenance Mode Toggle */}
+      <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-4">
+        <label className="mb-2 block text-sm font-bold text-foreground">🔧 Maintenance Mode</label>
+        <p className="mb-3 text-xs text-muted-foreground">Aktifkan untuk menutup akses website sementara. Admin tetap bisa masuk.</p>
+        <div className="flex gap-2 mb-3">
+          {[{ value: "true", label: "🔴 Aktif (Tutup)" }, { value: "false", label: "🟢 Nonaktif (Buka)" }].map((opt) => (
+            <button key={opt.value}
+              onClick={async () => {
+                setValues((p) => ({ ...p, maintenance_mode: opt.value }));
+                const { error } = await supabase.from("site_settings").upsert(
+                  { key: "maintenance_mode", value: opt.value },
+                  { onConflict: "key" }
+                );
+                if (error) {
+                  toast({ title: "Gagal menyimpan", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: opt.value === "true" ? "🔧 Maintenance mode AKTIF — website ditutup" : "🟢 Maintenance mode NONAKTIF — website dibuka" });
+                }
+              }}
+              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${
+                (values.maintenance_mode || "false") === opt.value
+                  ? opt.value === "true"
+                    ? "bg-destructive text-destructive-foreground ring-2 ring-destructive/50"
+                    : "bg-[hsl(var(--success))] text-primary-foreground ring-2 ring-[hsl(var(--success))]/50"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}>{opt.label}</button>
+          ))}
+        </div>
+        {values.maintenance_mode === "true" && (
+          <p className="text-xs text-destructive font-semibold">⚠️ Website sedang ditutup untuk semua user. Admin masih bisa akses /admin</p>
+        )}
+        <div className="mt-3">
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Pesan Maintenance (opsional)</label>
+          <div className="flex gap-2">
+            <Input
+              value={values.maintenance_message || ""}
+              onChange={(e) => setValues((p) => ({ ...p, maintenance_message: e.target.value }))}
+              className="bg-background" placeholder="Website sedang dalam perbaikan..."
+            />
+            <Button size="sm" onClick={() => saveSetting("maintenance_message")} disabled={saving === "maintenance_message"}>
+              Simpan
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border-2 border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/5 p-4">
         <label className="mb-2 block text-sm font-bold text-foreground">📢 Pengumuman</label>
         <p className="mb-3 text-xs text-muted-foreground">Aktifkan untuk menampilkan banner pengumuman di landing page</p>
