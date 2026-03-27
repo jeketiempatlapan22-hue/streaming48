@@ -792,11 +792,12 @@ const Index = () => {
             <h3 className="mb-1 text-lg font-bold text-foreground">{selectedShow.title}</h3>
             <p className="mb-4 text-sm text-muted-foreground">{selectedShow.price}</p>
 
-            {!selectedShow.is_subscription && purchaseStep === "info" && (
+            {/* Regular show: Step 1 - QRIS + Upload */}
+            {!selectedShow.is_subscription && purchaseStep === "qris" && (
               <div className="space-y-4">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-sm text-muted-foreground">
-                    Silakan scan QRIS di bawah, lalu upload bukti transfer dan kirim pesanan ke admin via WhatsApp.
+                    Silakan scan QRIS di bawah, lalu upload bukti transfer.
                   </p>
                 </div>
                 {selectedShow.qris_image_url ? (
@@ -806,42 +807,40 @@ const Index = () => {
                     QRIS belum tersedia
                   </div>
                 )}
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*,.heic,.heif";
+                    input.capture = "environment";
+                    input.onchange = (e) => handleUploadProof(e as any);
+                    input.click();
+                  }}
+                  disabled={uploadingProof}
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran"}
+                </button>
+              </div>
+            )}
 
-                {/* Upload bukti transfer */}
-                <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <Upload className="h-3.5 w-3.5" /> Upload Bukti Transfer
-                  </label>
-                  {proofUrl ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
-                        <CheckCircle className="h-4 w-4" /> Bukti berhasil diupload
-                      </div>
-                      <img src={proofUrl} alt="Bukti" className="max-h-32 rounded-lg border border-border object-contain" />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10"
-                      onClick={() => {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        input.accept = "image/*,.heic,.heif";
-                        input.capture = "environment";
-                        input.onchange = (e) => handleUploadProof(e as any);
-                        input.click();
-                      }}
-                      disabled={uploadingProof}
-                    >
-                      <Upload className="h-4 w-4" />
-                      {uploadingProof ? "Mengupload..." : "Pilih Foto Bukti Transfer"}
-                    </button>
-                  )}
+            {/* Regular show: Step 2 - Phone + Email + Submit */}
+            {!selectedShow.is_subscription && purchaseStep === "info" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
+                  <CheckCircle className="h-4 w-4" /> Bukti pembayaran berhasil diupload
                 </div>
-
                 <div>
                   <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5" /> Email Anda
+                    <Phone className="h-3.5 w-3.5" /> Nomor HP
+                  </label>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="bg-background" />
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5" /> Email
                   </label>
                   <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" className="bg-background" />
                 </div>
@@ -854,12 +853,18 @@ const Index = () => {
                     {selectedShow.lineup && <p>👥 {selectedShow.lineup}</p>}
                   </div>
                 </div>
-                <Button onClick={handleConfirmRegular} disabled={!email.trim()} className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground">
-                  <MessageCircle className="h-4 w-4" /> Kirim Pesanan via WhatsApp
+                <Button onClick={handleSubmitRegular} disabled={!phone.trim() || !email.trim()} className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground">
+                  <CheckCircle className="h-4 w-4" /> Kirim Pesanan
                 </Button>
-                <p className="text-[10px] text-center text-muted-foreground">
-                  * Anda akan diarahkan ke WhatsApp untuk mengirim data pesanan dan bukti transfer ke admin
-                </p>
+              </div>
+            )}
+
+            {/* Regular show: Done */}
+            {!selectedShow.is_subscription && purchaseStep === "done" && (
+              <div className="space-y-4 text-center">
+                <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
+                <h4 className="text-lg font-bold text-foreground">Pesanan Terkirim!</h4>
+                <p className="text-sm text-muted-foreground">Data dan bukti pembayaran Anda telah dikirim. Admin akan mengkonfirmasi pembayaran Anda.</p>
               </div>
             )}
 
