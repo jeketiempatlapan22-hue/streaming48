@@ -677,13 +677,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
       {playlistType === "cloudflare" && (
         <>
-          <iframe
-            key={iframeRefreshKey}
-            src={cloudflareSrc}
+          <div
+            ref={cfContainerRef}
             className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
-            allow="autoplay; fullscreen"
-            allowFullScreen
-            loading="lazy"
           />
           <div className="absolute inset-0 z-10 cursor-pointer" onClick={togglePlay} style={{ pointerEvents: "auto" }} />
         </>
