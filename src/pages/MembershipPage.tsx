@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Crown, Sparkles, CheckCircle, Star, Upload, Users, Calendar, Coins, AlertTriangle } from "lucide-react";
+import { Crown, Sparkles, CheckCircle, Star, Upload, Users, Calendar, Coins, AlertTriangle, MessageCircle, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -42,6 +42,7 @@ const MembershipPage = () => {
   const [coinOnly, setCoinOnly] = useState(false);
   const [closedPopup, setClosedPopup] = useState<Show | null>(null);
   const [myOrderedShows, setMyOrderedShows] = useState<Set<string>>(new Set());
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   const fetchMyOrders = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -80,6 +81,8 @@ const MembershipPage = () => {
     fetchMyOrders();
     supabase.from("site_settings").select("value").eq("key", "membership_coin_only").maybeSingle()
       .then(({ data }) => { if (data?.value === "true") setCoinOnly(true); });
+    supabase.from("site_settings").select("value").eq("key", "whatsapp_number").maybeSingle()
+      .then(({ data }) => { if (data?.value) setWhatsappNumber(data.value); });
 
     const showChannel = supabase.channel("membership-shows")
       .on("postgres_changes", { event: "*", schema: "public", table: "shows" }, () => fetchData())
@@ -143,6 +146,12 @@ const MembershipPage = () => {
     setUploadingProof(false);
   };
 
+  const openWhatsAppOrderDetail = (show: Show, orderPhone: string, orderEmail: string) => {
+    if (!whatsappNumber) return;
+    const msg = `📋 *Pendaftaran Membership Baru*\n\n🎭 Paket: ${show.title}\n💰 Harga: ${show.price}\n📱 HP: ${orderPhone}\n📧 Email: ${orderEmail}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const handleSubmitSubscription = async () => {
     if (!selectedShow || !proofFilePath) return;
     setSubmitting(true);
@@ -164,6 +173,7 @@ const MembershipPage = () => {
         body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "coin-proofs", order_type: "membership" },
       }).catch(() => {});
     }
+    openWhatsAppOrderDetail(selectedShow, phone, email);
   };
 
   const handleCoinPurchase = async () => {
@@ -378,6 +388,14 @@ const MembershipPage = () => {
                   <a href={resultGroupLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground hover:opacity-90">
                     📱 Gabung Grup
                   </a>
+                )}
+                {whatsappNumber && selectedShow && purchaseMethod !== "coin" && (
+                  <Button
+                    onClick={() => openWhatsAppOrderDetail(selectedShow, phone, email)}
+                    className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Kirim Ulang ke WhatsApp Admin
+                  </Button>
                 )}
               </div>
             )}

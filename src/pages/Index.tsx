@@ -208,6 +208,12 @@ const Index = () => {
     }
   };
 
+  const openWhatsAppOrderDetail = (show: Show, orderPhone: string, orderEmail: string) => {
+    if (!settings.whatsapp_number) return;
+    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}\n📧 Email: ${orderEmail}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
+    window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const handleSubmitRegular = async () => {
     if (!selectedShow || !proofFilePath) return;
     const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(proofFilePath, 86400);
@@ -221,6 +227,8 @@ const Index = () => {
         body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "payment-proofs", order_type: "show" },
       }).catch(() => {});
     }
+    // Auto-open WhatsApp with order details (no proof)
+    openWhatsAppOrderDetail(selectedShow, phone, email);
   };
 
   const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -258,6 +266,8 @@ const Index = () => {
         body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "payment-proofs", order_type: "subscription" },
       }).catch(() => {});
     }
+    // Auto-open WhatsApp with order details
+    openWhatsAppOrderDetail(selectedShow, phone, email);
   };
 
   // Parse Indonesian date format like "28 Juni 2025" + "20.00 WIB" into a timestamp
@@ -866,6 +876,14 @@ const Index = () => {
                 <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
                 <h4 className="text-lg font-bold text-foreground">Pesanan Terkirim!</h4>
                 <p className="text-sm text-muted-foreground">Data dan bukti pembayaran Anda telah dikirim. Admin akan mengirimkan <strong>link live streaming</strong> ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
+                {settings.whatsapp_number && (
+                  <Button
+                    onClick={() => openWhatsAppOrderDetail(selectedShow, phone, email)}
+                    className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Kirim Ulang ke WhatsApp Admin
+                  </Button>
+                )}
                 <div className="rounded-xl border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/5 p-3">
                   <p className="text-xs text-muted-foreground">
                     📱 Nomor HP salah? Anda dapat mengubahnya di halaman <a href="/profile" className="text-primary underline font-medium">Profil</a> atau hubungi admin.
@@ -934,6 +952,14 @@ const Index = () => {
                 <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
                 <h4 className="text-lg font-bold text-foreground">Pendaftaran Berhasil!</h4>
                 <p className="text-sm text-muted-foreground">Admin akan mengirimkan informasi akses ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
+                {settings.whatsapp_number && (
+                  <Button
+                    onClick={() => openWhatsAppOrderDetail(selectedShow, phone, email)}
+                    className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Kirim Ulang ke WhatsApp Admin
+                  </Button>
+                )}
                 <div className="rounded-xl border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/5 p-3">
                   <p className="text-xs text-muted-foreground">
                     📱 Nomor HP salah? Anda dapat mengubahnya di halaman <a href="/profile" className="text-primary underline font-medium">Profil</a> atau hubungi admin.
