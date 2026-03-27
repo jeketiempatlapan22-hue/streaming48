@@ -297,8 +297,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         clearInterval(checkInterval);
         if (!destroyed) createYTPlayer();
       };
-      // Cleanup interval after 6s
-      setTimeout(() => clearInterval(checkInterval), 6500);
+      // Cleanup interval after 3s
+      setTimeout(() => clearInterval(checkInterval), 3500);
     };
 
     const createYTPlayer = () => {
