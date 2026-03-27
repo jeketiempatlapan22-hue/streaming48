@@ -60,6 +60,7 @@ const Index = () => {
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
   const [purchaseStep, setPurchaseStep] = useState<"qris" | "upload" | "info" | "done">("qris");
   const [uploadingProof, setUploadingProof] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
   const [phone, setPhone] = useState("");
