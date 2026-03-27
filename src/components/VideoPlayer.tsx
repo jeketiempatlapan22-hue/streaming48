@@ -31,6 +31,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const [ytMuted, setYtMuted] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [ytFallback, setYtFallback] = useState(false);
+  const [iframeRefreshKey, setIframeRefreshKey] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const ytPlayerRef = useRef<any>(null);
@@ -52,13 +53,24 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
   useImperativeHandle(ref, () => ({
     play: () => {
-      if (playlistType === "youtube" && isYTReady()) {
-        const player = ytPlayerRef.current;
-        try {
-          const duration = player.getDuration?.();
-          if (duration && duration > 0) player.seekTo(duration, true);
-        } catch {}
-        player.playVideo();
+      if (playlistType === "youtube") {
+        if (ytFallback) {
+          setIframeRefreshKey(k => k + 1);
+          setIsPlaying(true);
+          return;
+        }
+        if (isYTReady()) {
+          const player = ytPlayerRef.current;
+          try {
+            const duration = player.getDuration?.();
+            if (duration && duration > 0) player.seekTo(duration, true);
+          } catch {}
+          player.playVideo();
+          setIsPlaying(true);
+        }
+      } else if (playlistType === "cloudflare") {
+        setIframeRefreshKey(k => k + 1);
+        setIsPlaying(true);
       } else if (playlistType === "m3u8" && hlsRef.current && videoRef.current) {
         if (hlsRef.current.liveSyncPosition) {
           videoRef.current.currentTime = hlsRef.current.liveSyncPosition;
@@ -73,6 +85,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
     pause: () => {
       if (playlistType === "youtube" && isYTReady()) {
         ytPlayerRef.current.pauseVideo();
+        setIsPlaying(false);
       } else if (videoRef.current) {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -91,7 +104,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       }
       return videoRef.current?.currentTime || 0;
     },
-  }), [playlistType, isYTReady]);
+  }), [playlistType, isYTReady, ytFallback]);
 
   // Hide controls after 3s
   useEffect(() => {
@@ -429,8 +442,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
     e?.stopPropagation();
     if (playlistType === "youtube") {
       if (ytFallback) {
-        // Can't control iframe directly
-        setIsPlaying(prev => !prev);
+        // Reload iframe to get latest content
+        setIframeRefreshKey(k => k + 1);
+        setIsPlaying(true);
         return;
       }
       const player = ytPlayerRef.current;
@@ -450,7 +464,13 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         }
       } catch {}
     } else if (playlistType === "cloudflare") {
-      setIsPlaying(prev => !prev);
+      if (!isPlaying) {
+        // Reload iframe to get latest content
+        setIframeRefreshKey(k => k + 1);
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
+      }
     } else if (videoRef.current) {
       const video = videoRef.current;
       if (video.paused) {
@@ -463,7 +483,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         setIsPlaying(false);
       }
     }
-  }, [playlistType, ytFallback]);
+  }, [playlistType, ytFallback, isPlaying]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
@@ -526,8 +546,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const ytEmbedSrc = useMemo(() => {
     if (playlistType !== "youtube") return "";
     const videoId = extractVideoId(playlistUrl);
-    return `https://www.youtube.com/embed/${videoId}?autoplay=${autoPlay ? 1 : 0}&rel=0&modestbranding=1&playsinline=1&enablejsapi=0`;
-  }, [playlistType, playlistUrl, autoPlay, extractVideoId]);
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=0`;
+  }, [playlistType, playlistUrl, extractVideoId]);
 
   const cloudflareSrc = useMemo(() => {
     if (playlistType !== "cloudflare") return "";
@@ -588,6 +608,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       {playlistType === "youtube" && ytFallback && (
         <>
           <iframe
+            key={iframeRefreshKey}
             src={ytEmbedSrc}
             className={`h-full w-full border-0 ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -608,6 +629,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       {playlistType === "cloudflare" && (
         <>
           <iframe
+            key={iframeRefreshKey}
             src={cloudflareSrc}
             className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
             allow="autoplay; fullscreen"
