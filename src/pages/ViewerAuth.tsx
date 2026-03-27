@@ -35,7 +35,7 @@ const ViewerAuth = () => {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check existing session with timeout — don't hang
+    // Check existing session with timeout
     Promise.race([
       supabase.auth.getSession(),
       new Promise<{ data: { session: null } }>((resolve) =>
@@ -48,6 +48,12 @@ const ViewerAuth = () => {
       .catch(() => {});
 
     if (refCode) setMode("signup");
+
+    // Load Turnstile site key from site_settings
+    supabase.from("site_settings").select("value").eq("key", "turnstile_site_key").single()
+      .then(({ data }) => {
+        if (data?.value) setTurnstileSiteKey(data.value);
+      });
   }, [navigate, refCode]);
 
   const normalizePhone = (raw: string) => raw.replace(/[^0-9]/g, "");
