@@ -204,7 +204,9 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
     e.preventDefault();
     if (!newMessage.trim() || !username) return;
     const now = Date.now();
-    if (now - lastSentRef.current < 2000) return;
+    if (now - lastSentRef.current < 3000) return; // 3s cooldown
+    lastSentRef.current = now;
+    const trimmed = newMessage.trim().slice(0, 200); // 200 char limit
     lastSentRef.current = now;
     setSending(true);
     const insertData: any = { username, message: newMessage.trim(), token_id: tokenId || null };
