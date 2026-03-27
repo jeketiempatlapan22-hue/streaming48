@@ -221,19 +221,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       hls.loadSource(decodedUrl);
       hls.attachMedia(videoRef.current!);
 
-      try {
-        const videoEl = videoRef.current!;
-        const origSrc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
-        Object.defineProperty(videoEl, 'src', {
-          get: () => '',
-          set: (v: string) => origSrc?.set?.call(videoEl, v),
-          configurable: true,
-        });
-        Object.defineProperty(videoEl, 'currentSrc', {
-          get: () => '',
-          configurable: true,
-        });
-      } catch {}
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_: any, data: any) => {
         if (destroyed) return;
