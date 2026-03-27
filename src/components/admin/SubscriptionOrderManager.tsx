@@ -173,7 +173,37 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
     }
   };
 
-  const savePhone = async (id: string) => {
+  const sendShowLink = async (order: Order) => {
+    const showInfo = shows[order.show_id];
+    const token = orderTokens[order.id];
+    if (!order.phone || !showInfo) { toast({ title: "Data tidak lengkap", variant: "destructive" }); return; }
+    setSendingWaAction("show-" + order.id);
+    const siteUrl = window.location.origin;
+    let message = `📺 *Link Show: ${showInfo.title}*\n\n`;
+    if (token) {
+      const liveLink = `${siteUrl}/live?t=${token.code}`;
+      message += `🎫 Token: \`${token.code}\`\n📺 Link Nonton: ${liveLink}\n\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini.`;
+    } else if (showInfo.is_subscription && showInfo.group_link) {
+      message += `🔗 Link Grup: ${showInfo.group_link}`;
+    } else {
+      message += `ℹ️ Belum ada token untuk pesanan ini.`;
+    }
+    await sendWhatsApp(order.phone, message);
+    setSendingWaAction(null);
+  };
+
+  const sendReplayLink = async (order: Order) => {
+    const showInfo = shows[order.show_id];
+    if (!order.phone || !showInfo) { toast({ title: "Data tidak lengkap", variant: "destructive" }); return; }
+    if (!showInfo.access_password) { toast({ title: "Show ini belum memiliki sandi replay", variant: "destructive" }); return; }
+    setSendingWaAction("replay-" + order.id);
+    const siteUrl = window.location.origin;
+    const message = `🔄 *Akses Replay: ${showInfo.title}*\n\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi Replay: \`${showInfo.access_password}\`\n\nGunakan sandi di atas untuk membuka replay show ini. Selamat menonton! 🎬`;
+    await sendWhatsApp(order.phone, message);
+    setSendingWaAction(null);
+  };
+
+
     const newPhone = editPhones[id]?.trim();
     if (!newPhone) return;
     setSavingPhone(id);
