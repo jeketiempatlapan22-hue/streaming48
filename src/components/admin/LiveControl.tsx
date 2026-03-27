@@ -110,12 +110,18 @@ const LiveControl = () => {
     setPlLoading(false);
   };
 
-  const startEdit = (p: any) => { setEditingId(p.id); setEditLabel(p.title); setEditType(p.type); setEditUrl(p.url); };
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditLabel(p.title);
+    setEditType(p.type);
+    setEditUrl(p.type === "youtube" ? decryptEmbedId(p.url) : p.url);
+  };
   const cancelEdit = () => setEditingId(null);
 
   const saveEdit = async () => {
     if (!editingId || !editLabel || !editUrl) return;
-    await supabase.from("playlists").update({ title: editLabel, type: editType, url: editUrl }).eq("id", editingId);
+    const urlToSave = editType === "youtube" ? encryptEmbedId(editUrl) : editUrl;
+    await supabase.from("playlists").update({ title: editLabel, type: editType, url: urlToSave }).eq("id", editingId);
     toast({ title: "Playlist diperbarui!" });
     setEditingId(null);
     await fetchPlaylists();

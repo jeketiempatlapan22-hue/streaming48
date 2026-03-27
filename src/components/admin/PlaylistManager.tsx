@@ -37,12 +37,19 @@ const PlaylistManager = () => {
     setLoading(false);
   };
 
-  const startEdit = (p: any) => { setEditingId(p.id); setEditTitle(p.title); setEditType(p.type); setEditUrl(p.url); };
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditTitle(p.title);
+    setEditType(p.type);
+    // Decrypt for editing so admin sees the real ID
+    setEditUrl(p.type === "youtube" ? decryptEmbedId(p.url) : p.url);
+  };
   const cancelEdit = () => { setEditingId(null); };
 
   const saveEdit = async () => {
     if (!editingId || !editTitle || !editUrl) return;
-    const { error } = await supabase.from("playlists").update({ title: editTitle, type: editType, url: editUrl }).eq("id", editingId);
+    const urlToSave = editType === "youtube" ? encryptEmbedId(editUrl) : editUrl;
+    const { error } = await supabase.from("playlists").update({ title: editTitle, type: editType, url: urlToSave }).eq("id", editingId);
     if (!error) { toast({ title: "Playlist diperbarui!" }); setEditingId(null); await fetchPlaylists(); }
     else toast({ title: "Gagal memperbarui", variant: "destructive" });
   };
