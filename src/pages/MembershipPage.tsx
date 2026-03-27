@@ -33,7 +33,8 @@ const MembershipPage = () => {
   const [purchaseMethod, setPurchaseMethod] = useState<"qris" | "coin" | null>(null);
   const [purchaseStep, setPurchaseStep] = useState<"choose" | "qris" | "upload" | "info" | "coin_info" | "coin_insufficient" | "done">("choose");
   const [uploadingProof, setUploadingProof] = useState(false);
-  const proofInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [proofFilePath, setProofFilePath] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
