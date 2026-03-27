@@ -34,7 +34,6 @@ const MembershipPage = () => {
   const [purchaseStep, setPurchaseStep] = useState<"choose" | "qris" | "upload" | "info" | "coin_info" | "coin_insufficient" | "done">("choose");
   const [uploadingProof, setUploadingProof] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [proofFilePath, setProofFilePath] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -348,15 +347,9 @@ const MembershipPage = () => {
                 )}
                 <p className="text-xs text-muted-foreground">Setelah transfer, upload bukti pembayaran</p>
                 <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { handleUploadProof(e); if (galleryInputRef.current) galleryInputRef.current.value = ""; }} disabled={uploadingProof} />
-                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => { handleUploadProof(e); if (cameraInputRef.current) cameraInputRef.current.value = ""; }} disabled={uploadingProof} />
-                <div className="flex gap-2">
-                  <button type="button" className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 py-4 text-sm font-medium text-primary transition hover:bg-primary/5 ${uploadingProof ? "opacity-50" : ""}`} onClick={() => galleryInputRef.current?.click()} disabled={uploadingProof}>
-                    <Upload className="h-4 w-4" /> {uploadingProof ? "..." : "Galeri"}
-                  </button>
-                  <button type="button" className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 py-4 text-sm font-medium text-primary transition hover:bg-primary/5 ${uploadingProof ? "opacity-50" : ""}`} onClick={() => cameraInputRef.current?.click()} disabled={uploadingProof}>
-                    📷 {uploadingProof ? "..." : "Kamera"}
-                  </button>
-                </div>
+                <button type="button" className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 py-4 text-sm font-medium text-primary transition hover:bg-primary/5 ${uploadingProof ? "opacity-50" : ""}`} onClick={() => galleryInputRef.current?.click()} disabled={uploadingProof}>
+                  <Upload className="h-4 w-4" /> {uploadingProof ? "Mengupload..." : "Upload Bukti Pembayaran"}
+                </button>
               </div>
             )}
 
