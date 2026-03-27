@@ -211,7 +211,8 @@ const Index = () => {
 
   const openWhatsAppOrderDetail = (show: Show, orderPhone: string, orderEmail: string) => {
     if (!settings.whatsapp_number) return;
-    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}\n📧 Email: ${orderEmail}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
+    const emailLine = orderEmail ? `\n📧 Email: ${orderEmail}` : '';
+    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}${emailLine}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -223,12 +224,12 @@ const Index = () => {
       signedUrl = urlData?.signedUrl || "";
     }
     const { data: orderData } = await supabase.from("subscription_orders").insert({
-      show_id: selectedShow.id, phone, email, payment_proof_url: signedUrl || null,
+      show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null,
     }).select("id").single();
     setPurchaseStep("done");
     if (orderData?.id) {
       supabase.functions.invoke("notify-subscription-order", {
-        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath || null, proof_bucket: "payment-proofs", order_type: "show" },
+        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email: email || null, proof_file_path: proofFilePath || null, proof_bucket: "payment-proofs", order_type: "show" },
       }).catch(() => {});
     }
     openWhatsAppOrderDetail(selectedShow, phone, email);
@@ -836,7 +837,7 @@ const Index = () => {
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="bg-background" />
                   <p className="mt-1 text-[10px] text-muted-foreground">Contoh: 081234567890 atau 628123456789</p>
                 </div>
-                {/* Optional proof upload */}
+                {/* Optional proof upload - gallery only */}
                 {proofFilePath ? (
                   <div className="flex items-center gap-2 text-sm text-[hsl(var(--success))]">
                     <CheckCircle className="h-4 w-4" /> Bukti pembayaran berhasil diupload

@@ -92,7 +92,8 @@ const SchedulePage = () => {
 
   const openWhatsAppOrderDetail = (show: Show, orderPhone: string, orderEmail: string) => {
     if (!settings.whatsapp_number) return;
-    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}\n📧 Email: ${orderEmail}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
+    const emailLine = orderEmail ? `\n📧 Email: ${orderEmail}` : '';
+    const msg = `📋 *Pesanan Show Baru*\n\n🎭 Show: ${show.title}\n💰 Harga: ${show.price}\n📅 Jadwal: ${show.schedule_date || '-'} ${show.schedule_time || ''}\n👥 Lineup: ${show.lineup || '-'}\n📱 HP: ${orderPhone}${emailLine}\n\nSaya sudah melakukan pembayaran dan mengirim bukti transfer. Mohon dikonfirmasi 🙏`;
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -123,7 +124,7 @@ const SchedulePage = () => {
       signedUrl = urlData?.signedUrl || "";
     }
     const { data: orderData } = await supabase.from("subscription_orders").insert({
-      show_id: selectedShow.id, phone, email, payment_proof_url: signedUrl || null,
+      show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null,
     }).select("id").single();
     setPurchaseStep("done");
     if (orderData?.id) {
