@@ -46,6 +46,27 @@ export const useAuth = () => {
   const adminCheckRef = useRef<string | null>(null);
 
   useEffect(() => {
+    let banChannel: any = null;
+
+    const setupBanListener = (userId: string) => {
+      // Clean up previous listener
+      if (banChannel) supabase.removeChannel(banChannel);
+      banChannel = supabase.channel(`user-ban-${userId}`).on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_bans", filter: `user_id=eq.${userId}` },
+        (payload: any) => {
+          const row = payload.new as any;
+          if (row?.is_active) {
+            setIsBanned(true);
+            setBanReason(row.reason || "Akun Anda telah diblokir");
+          } else {
+            setIsBanned(false);
+            setBanReason("");
+          }
+        }
+      ).subscribe();
+    };
+
     // Set up listener FIRST (per Supabase best practice)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -56,15 +77,14 @@ export const useAuth = () => {
         if (currentUser) {
           if (adminCheckRef.current !== currentUser.id) {
             adminCheckRef.current = currentUser.id;
-            // Admin check is critical — ban check is deferred
             const isAdm = await checkAdminSafe(currentUser.id);
             cachedIsAdmin = isAdm;
             setIsAdmin(isAdm);
-            // Ban check runs in background — doesn't block login
             checkBanSafe(currentUser.id).then((b) => {
               setIsBanned(b.banned);
               setBanReason(b.reason);
             });
+            setupBanListener(currentUser.id);
           }
         } else {
           adminCheckRef.current = null;
@@ -72,6 +92,7 @@ export const useAuth = () => {
           setIsAdmin(false);
           setIsBanned(false);
           setBanReason("");
+          if (banChannel) { supabase.removeChannel(banChannel); banChannel = null; }
         }
         cacheReady = true;
         setLoading(false);
@@ -98,17 +119,20 @@ export const useAuth = () => {
             setIsBanned(b.banned);
             setBanReason(b.reason);
           });
+          setupBanListener(currentUser.id);
         }
         cacheReady = true;
         setLoading(false);
       }).catch(() => {
-        // If getSession fails entirely, still mark as ready so UI isn't stuck
         cacheReady = true;
         setLoading(false);
       });
     }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (banChannel) supabase.removeChannel(banChannel);
+    };
   }, []);
 
   const signOut = async () => {

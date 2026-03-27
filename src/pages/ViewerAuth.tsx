@@ -10,6 +10,7 @@ import { Coins, Mail, Lock, ArrowLeft, Phone, User, Gift, Eye, EyeOff } from "lu
 import { checkClientRateLimit, getRateLimitRemaining } from "@/lib/rateLimiter";
 import { recordAuthMetric } from "@/lib/authMetrics";
 import { trackFailedLogin } from "@/lib/suspiciousDetector";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 type AuthMethod = "phone" | "email";
 const TRANSIENT_AUTH_ERROR = /timeout|timed out|deadline|504|500|failed to fetch|networkerror|network request failed|load failed|connection/i;
@@ -30,9 +31,11 @@ const ViewerAuth = () => {
   const refCode = searchParams.get("ref");
   const navigate = useNavigate();
   const submitRef = useRef(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check existing session with timeout — don't hang
+    // Check existing session with timeout
     Promise.race([
       supabase.auth.getSession(),
       new Promise<{ data: { session: null } }>((resolve) =>
@@ -45,6 +48,12 @@ const ViewerAuth = () => {
       .catch(() => {});
 
     if (refCode) setMode("signup");
+
+    // Load Turnstile site key from site_settings
+    supabase.from("site_settings").select("value").eq("key", "turnstile_site_key").single()
+      .then(({ data }) => {
+        if (data?.value) setTurnstileSiteKey(data.value);
+      });
   }, [navigate, refCode]);
 
   const normalizePhone = (raw: string) => raw.replace(/[^0-9]/g, "");
@@ -100,6 +109,27 @@ const ViewerAuth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid() || submitRef.current || loading) return;
+
+    // Turnstile verification (if configured)
+    if (turnstileSiteKey && !turnstileToken) {
+      toast.error("Silakan selesaikan verifikasi keamanan terlebih dahulu");
+      return;
+    }
+    if (turnstileSiteKey && turnstileToken) {
+      try {
+        const { data: verifyResult } = await supabase.functions.invoke("verify-turnstile", {
+          body: { token: turnstileToken },
+        });
+        if (!verifyResult?.success) {
+          toast.error("Verifikasi keamanan gagal. Coba lagi.");
+          setTurnstileToken(null);
+          return;
+        }
+      } catch {
+        // If verification fails, allow through (graceful degradation)
+      }
+    }
+
     submitRef.current = true;
 
     const rlKey = `viewer-auth-${mode}`;
@@ -356,7 +386,18 @@ const ViewerAuth = () => {
               )}
             </div>
           )}
-          <Button type="submit" className="w-full" disabled={loading || !isFormValid()}>{loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}</Button>
+          {turnstileSiteKey && (
+            <div className="flex justify-center">
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onError={() => setTurnstileToken(null)}
+                onExpire={() => setTurnstileToken(null)}
+                options={{ theme: "dark", size: "compact" }}
+              />
+            </div>
+          )}
+          <Button type="submit" className="w-full" disabled={loading || !isFormValid() || (!!turnstileSiteKey && !turnstileToken)}>{loading ? "Memproses..." : mode === "login" ? "Masuk" : "Daftar"}</Button>
           <p className="text-center text-xs text-muted-foreground">{mode === "login" ? "Belum punya akun?" : "Sudah punya akun?"}<button type="button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setLoginError(""); setFailCount(0); }} className="ml-1 font-medium text-primary hover:underline">{mode === "login" ? "Daftar" : "Masuk"}</button></p>
           {mode === "login" && (
             <p className="text-center text-xs"><a href="/forgot-password" className={`transition-colors ${failCount >= 2 ? "font-bold text-primary" : "text-muted-foreground hover:text-primary"}`}>Lupa password?</a></p>

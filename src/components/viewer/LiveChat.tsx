@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useTransition, memo } from "r
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Pin, Trash2, ShieldBan, ShieldPlus, ShieldMinus, Users, Trophy } from "lucide-react";
+import { Send, Pin, Trash2, ShieldBan, ShieldPlus, ShieldMinus, Users, Trophy, UserX } from "lucide-react";
 import ChatLeaderboard from "@/components/viewer/ChatLeaderboard";
 
 
@@ -15,6 +15,7 @@ interface LiveChatProps {
   onDeleteMessage?: (id: string) => void;
   onBlockUser?: (tokenId: string) => void;
   onToggleChatMod?: (username: string, isMod: boolean) => void;
+  onBanUser?: (username: string) => void;
 }
 
 interface ChatMessage {
@@ -39,7 +40,7 @@ const ModeratorBadge = () => (
   </span>
 );
 
-const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin, onDelete, onBlock, onToggleMod, formatTime }: {
+const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin, onDelete, onBlock, onToggleMod, onBanUser, formatTime }: {
   msg: ChatMessage;
   isAdmin: boolean;
   isChatMod: boolean;
@@ -48,6 +49,7 @@ const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin
   onDelete: (id: string) => void;
   onBlock?: (tokenId: string) => void;
   onToggleMod?: (username: string, isMod: boolean) => void;
+  onBanUser?: (username: string) => void;
   formatTime: (d: string) => string;
 }) => {
   const canModerate = isAdmin || isChatMod;
@@ -90,6 +92,19 @@ const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin
               {isMsgFromMod ? <ShieldMinus className="h-3 w-3" /> : <ShieldPlus className="h-3 w-3" />}
             </button>
           )}
+          {isAdmin && !msg.is_admin && onBanUser && (
+            <button
+              onClick={() => {
+                if (confirm(`Ban user "${msg.username}"? User akan langsung dikeluarkan dan tidak bisa akses lagi.`)) {
+                  onBanUser(msg.username);
+                }
+              }}
+              className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+              title="Ban User"
+            >
+              <UserX className="h-3 w-3" />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -97,7 +112,7 @@ const ChatMessageItem = memo(({ msg, isAdmin, isChatMod, chatModUsernames, onPin
 });
 ChatMessageItem.displayName = "ChatMessageItem";
 
-const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMessage, onBlockUser, onToggleChatMod }: LiveChatProps) => {
+const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMessage, onBlockUser, onToggleChatMod, onBanUser }: LiveChatProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pinnedMessages, setPinnedMessages] = useState<ChatMessage[]>([]);
@@ -189,10 +204,12 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
     e.preventDefault();
     if (!newMessage.trim() || !username) return;
     const now = Date.now();
-    if (now - lastSentRef.current < 2000) return;
+    if (now - lastSentRef.current < 3000) return; // 3s cooldown
+    lastSentRef.current = now;
+    const trimmed = newMessage.trim().slice(0, 200); // 200 char limit
     lastSentRef.current = now;
     setSending(true);
-    const insertData: any = { username, message: newMessage.trim(), token_id: tokenId || null };
+    const insertData: any = { username, message: trimmed, token_id: tokenId || null };
     if (currentUserId) insertData.user_id = currentUserId;
     if (isAdmin) insertData.is_admin = true;
     await supabase.from("chat_messages").insert(insertData);
@@ -262,7 +279,7 @@ const LiveChat = ({ username, tokenId, isLive, isAdmin, onPinMessage, onDeleteMe
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-0.5">
         {messages.map((msg) => (
-          <ChatMessageItem key={msg.id} msg={msg} isAdmin={isAdmin} isChatMod={isChatMod} chatModUsernames={chatModUsernames} onPin={handlePin} onDelete={handleDelete} onBlock={onBlockUser} onToggleMod={onToggleChatMod} formatTime={formatTime} />
+          <ChatMessageItem key={msg.id} msg={msg} isAdmin={isAdmin} isChatMod={isChatMod} chatModUsernames={chatModUsernames} onPin={handlePin} onDelete={handleDelete} onBlock={onBlockUser} onToggleMod={onToggleChatMod} onBanUser={onBanUser} formatTime={formatTime} />
         ))}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
