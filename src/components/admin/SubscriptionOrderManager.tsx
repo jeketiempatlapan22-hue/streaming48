@@ -25,6 +25,8 @@ interface ShowInfo {
   is_subscription: boolean;
   access_password: string;
   is_replay: boolean;
+  schedule_date: string;
+  schedule_time: string;
 }
 
 interface SubscriptionOrderManagerProps {
@@ -59,9 +61,9 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
 
   const fetchOrders = async () => {
     const { data: ordersData } = await (supabase as any).from("subscription_orders").select("*").order("created_at", { ascending: false });
-    const { data: showsData } = await supabase.from("shows").select("id, title, group_link, is_subscription, access_password, is_replay");
+    const { data: showsData } = await supabase.from("shows").select("id, title, group_link, is_subscription, access_password, is_replay, schedule_date, schedule_time");
     const showMap: Record<string, ShowInfo> = {};
-    showsData?.forEach((s: any) => { showMap[s.id] = { title: s.title, group_link: s.group_link || "", is_subscription: s.is_subscription, access_password: s.access_password || "", is_replay: s.is_replay || false }; });
+    showsData?.forEach((s: any) => { showMap[s.id] = { title: s.title, group_link: s.group_link || "", is_subscription: s.is_subscription, access_password: s.access_password || "", is_replay: s.is_replay || false, schedule_date: s.schedule_date || "", schedule_time: s.schedule_time || "" }; });
     setShows(showMap);
     setOrders((ordersData as Order[]) || []);
 
@@ -100,17 +102,18 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
       // Find the order to get phone and show info
       const order = orders.find((o) => o.id === id);
       const showInfo = order ? shows[order.show_id] : null;
-      const siteUrl = window.location.origin;
+      const siteUrl = "https://realtime48show.my.id";
 
       if (result.token_code && order?.phone && showInfo) {
-        // Build WhatsApp message with live link + token + replay info
         const liveLink = `${siteUrl}/live?t=${result.token_code}`;
         let message = `✅ *Pesanan Dikonfirmasi!*\n\n` +
-          `🎭 Show: *${showInfo.title}*\n` +
-          `🎫 Token: \`${result.token_code}\`\n` +
+          `🎭 Show: *${showInfo.title}*\n`;
+        if (showInfo.schedule_date) {
+          message += `📅 Jadwal: ${showInfo.schedule_date}${showInfo.schedule_time ? " " + showInfo.schedule_time : ""}\n`;
+        }
+        message += `🎫 Token: \`${result.token_code}\`\n` +
           `📺 Link Nonton: ${liveLink}\n`;
 
-        // Add replay password if show has one
         if (showInfo.access_password) {
           const replayLink = `${siteUrl}/replay`;
           message += `\n🔄 *Akses Replay:*\n` +
@@ -121,7 +124,6 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
         message += `\n⚠️ Token hanya berlaku untuk *1 perangkat*. Jangan bagikan link ini ke orang lain.\n` +
           `\nTerima kasih telah membeli! 🎉`;
 
-        // Auto-send WhatsApp to user
         sendWhatsApp(order.phone, message);
         toast({ title: `Order dikonfirmasi! Token: ${result.token_code} — WA dikirim` });
       } else if (result.token_code) {
@@ -175,11 +177,29 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
 
   const sendAllLinks = async (order: Order) => {
     const showInfo = shows[order.show_id];
-    const token = orderTokens[order.id];
+    let token = orderTokens[order.id];
     if (!order.phone || !showInfo) { toast({ title: "Data tidak lengkap", variant: "destructive" }); return; }
     setSendingWaAction("all-" + order.id);
-    const siteUrl = window.location.origin;
-    let message = `📺 *Info Show: ${showInfo.title}*\n\n`;
+    const siteUrl = "https://realtime48show.my.id";
+
+    // If no token exists and it's a regular (non-subscription) show, create one via confirm_regular_order or directly
+    if (!token && !showInfo.is_subscription && order.user_id) {
+      // Create a token linked to the show and user
+      const newCode = "ADM-" + Math.random().toString(36).slice(2, 14).toUpperCase();
+      const { error: tokenErr } = await supabase.from("tokens").insert({
+        code: newCode, show_id: order.show_id, user_id: order.user_id, max_devices: 1,
+      });
+      if (!tokenErr) {
+        token = { code: newCode, expires_at: null };
+        setOrderTokens(prev => ({ ...prev, [order.id]: token! }));
+      }
+    }
+
+    let message = `📺 *Info Show: ${showInfo.title}*\n`;
+    if (showInfo.schedule_date) {
+      message += `📅 Jadwal: ${showInfo.schedule_date}${showInfo.schedule_time ? " " + showInfo.schedule_time : ""}\n`;
+    }
+    message += "\n";
 
     if (token) {
       const liveLink = `${siteUrl}/live?t=${token.code}`;
@@ -296,11 +316,13 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
 
           const order = orders.find((o) => o.id === id);
           const showInfo = order ? shows[order.show_id] : null;
-          const siteUrl = window.location.origin;
+          const siteUrl = "https://realtime48show.my.id";
 
           if (result.token_code && order?.phone && showInfo) {
             const liveLink = `${siteUrl}/live?t=${result.token_code}`;
-            let message = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showInfo.title}*\n🎫 Token: \`${result.token_code}\`\n📺 Link Nonton: ${liveLink}\n`;
+            let message = `✅ *Pesanan Dikonfirmasi!*\n\n🎭 Show: *${showInfo.title}*\n`;
+            if (showInfo.schedule_date) message += `📅 Jadwal: ${showInfo.schedule_date}${showInfo.schedule_time ? " " + showInfo.schedule_time : ""}\n`;
+            message += `🎫 Token: \`${result.token_code}\`\n📺 Link Nonton: ${liveLink}\n`;
             if (showInfo.access_password) {
               message += `\n🔄 *Akses Replay:*\n🔗 Link Replay: ${siteUrl}/replay\n🔑 Sandi Replay: \`${showInfo.access_password}\`\n`;
             }
@@ -476,6 +498,9 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
                 <div className="flex-1 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-foreground">{shows[order.show_id]?.title || "Unknown"}</p>
+                  {shows[order.show_id]?.schedule_date && (
+                    <span className="text-[10px] text-muted-foreground">📅 {shows[order.show_id].schedule_date}{shows[order.show_id].schedule_time ? ` ${shows[order.show_id].schedule_time}` : ""}</span>
+                  )}
                   <span className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-bold ${
                     order.status === "pending" ? "bg-[hsl(var(--warning))]/20 text-[hsl(var(--warning))]"
                     : order.status === "confirmed" ? "bg-[hsl(var(--success))]/20 text-[hsl(var(--success))]"

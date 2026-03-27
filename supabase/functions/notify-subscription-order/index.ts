@@ -36,7 +36,7 @@ serve(async (req) => {
     const ADMIN_CHAT_ID = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
     if (!ADMIN_CHAT_ID) throw new Error('ADMIN_TELEGRAM_CHAT_ID is not configured');
 
-    const { order_id, show_title, phone, email, proof_file_path, proof_bucket, order_type } = await req.json();
+    const { order_id, show_title, phone, email, proof_file_path, proof_bucket, order_type, schedule_date, schedule_time } = await req.json();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -55,14 +55,16 @@ serve(async (req) => {
     const typeLabel = order_type === 'replay' ? 'REPLAY' : order_type === 'show' ? 'SHOW' : 'MEMBERSHIP';
     const emoji = order_type === 'replay' ? '🔄' : order_type === 'show' ? '🎫' : '🎬';
 
-    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+    const scheduleInfo = schedule_date ? `\n📅 Jadwal: ${escapeMarkdown(schedule_date)}${schedule_time ? ' ' + escapeMarkdown(schedule_time) : ''}` : '';
+    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}${scheduleInfo}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
 
     const inline_keyboard = [[
       { text: '✅ Konfirmasi', callback_data: `approve_sub_${shortId}` },
       { text: '❌ Tolak', callback_data: `reject_sub_${shortId}` },
     ]];
 
-    const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
+    const waScheduleInfo = schedule_date ? `\n📅 Jadwal: ${schedule_date}${schedule_time ? ' ' + schedule_time : ''}` : '';
+    const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}${waScheduleInfo}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
 
     const bucket = proof_bucket || 'payment-proofs';
     let photoSent = false;
