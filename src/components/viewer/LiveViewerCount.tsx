@@ -9,18 +9,45 @@ const LiveViewerCount = ({ isLive }: { isLive: boolean }) => {
   useEffect(() => {
     if (!isLive) { setCount(0); return; }
 
-    // Subscribe to the same "online-users" channel as LiveChat but READ-ONLY
-    // Do NOT call channel.track() — we only want to observe live viewers, not add ourselves
-    const channel = supabase.channel("online-users");
+    // Use a unique channel name to avoid conflict with LiveChat's "online-users" channel
+    const channelName = `viewer-count-${Date.now()}`;
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: "viewer-count-observer" } },
+    });
 
     channel
       .on("presence", { event: "sync" }, () => {
+        // Read from the main online-users channel if possible, otherwise use this channel
+        try {
+          const mainChannel = supabase.channel("online-users");
+          const state = mainChannel.presenceState();
+          const keys = Object.keys(state);
+          if (keys.length > 0) {
+            setCount(keys.length);
+            return;
+          }
+        } catch {}
         const state = channel.presenceState();
         setCount(Object.keys(state).length);
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Poll presence state periodically as a fallback
+    const interval = setInterval(() => {
+      try {
+        const channels = (supabase as any).getChannels?.() || [];
+        const mainCh = channels.find((c: any) => c.topic === "realtime:online-users");
+        if (mainCh) {
+          const state = mainCh.presenceState();
+          setCount(Object.keys(state).length);
+        }
+      } catch {}
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [isLive]);
 
   if (!isLive || count === 0) return null;
