@@ -97,10 +97,10 @@ const Index = () => {
         const { data } = await supabase.rpc("get_public_shows");
         return data || [];
       }, 30_000),
-      supabase.from("streams").select("is_live").limit(1).single(),
+      supabase.rpc("get_stream_status"),
     ]);
     setShows(showsData as Show[]);
-    if (streamRes.data) setIsStreamLive(streamRes.data.is_live);
+    if (streamRes.data) setIsStreamLive((streamRes.data as any)?.is_live || false);
 
     // Stagger non-critical
     setTimeout(async () => {
