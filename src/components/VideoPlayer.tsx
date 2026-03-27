@@ -656,15 +656,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         </>
       )}
 
-      {/* YouTube fallback: direct iframe embed */}
+      {/* YouTube fallback: protected iframe container */}
       {playlistType === "youtube" && ytFallback && (
         <>
-          <iframe
-            key={iframeRefreshKey}
-            src={ytEmbedSrc}
-            className={`h-full w-full border-0 ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+          <div
+            ref={ytFallbackContainerRef}
+            className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
           />
         </>
       )}
