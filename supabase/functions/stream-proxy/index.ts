@@ -374,9 +374,9 @@ Deno.serve(async (req) => {
       const exp = url.searchParams.get("exp");
       const sig = url.searchParams.get("sig");
 
-      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 180, 60000)) {
-        return getRateLimitResponse();
+      // HLS player requests every 2-6s; 300/min per playlist is safe for legitimate use
+      if (pid && !edgeRateLimit(`play:${clientIp}:${pid}`, 300, 60000)) {
+        return getRateLimitResponse(true);
       }
 
       if (!pid || !exp || !sig) {
