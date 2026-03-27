@@ -24,12 +24,10 @@ const PurchaseModal = ({
   onClose, onConfirmRegular, onUploadProof, onSubmitSubscription,
 }: PurchaseModalProps) => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUploadProof(e);
     if (galleryInputRef.current) galleryInputRef.current.value = "";
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
   return (
@@ -42,9 +40,8 @@ const PurchaseModal = ({
         <h3 className="mb-1 text-lg font-bold text-foreground">{show.title}</h3>
         <p className="mb-4 text-sm text-muted-foreground">{show.price}</p>
 
-        {/* Hidden file inputs: one for gallery (no capture), one for camera */}
+        {/* Hidden file input for gallery */}
         <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
 
         {/* Regular show: QRIS + WhatsApp */}
         {!show.is_subscription && purchaseStep === "info" && (
