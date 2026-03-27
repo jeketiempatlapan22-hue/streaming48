@@ -34,6 +34,7 @@ interface SubscriptionOrderManagerProps {
 const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderManagerProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [shows, setShows] = useState<Record<string, ShowInfo>>({});
+  const [orderTokens, setOrderTokens] = useState<Record<string, { code: string; expires_at: string | null }>>({});
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("pending");
   const [showFilter, setShowFilter] = useState<string>("all");
   const [waMessages, setWaMessages] = useState<Record<string, string>>({});
@@ -53,6 +54,7 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [sendingWaAction, setSendingWaAction] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchOrders = async () => {
