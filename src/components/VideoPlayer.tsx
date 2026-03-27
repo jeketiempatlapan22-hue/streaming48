@@ -594,28 +594,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
 
-  // Compute YouTube direct embed URL for fallback
-  const ytEmbedSrc = useMemo(() => {
-    if (playlistType !== "youtube") return "";
-    const videoId = extractVideoId(playlistUrl);
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=0`;
-  }, [playlistType, playlistUrl, extractVideoId]);
-
-  const cloudflareSrc = useMemo(() => {
-    if (playlistType !== "cloudflare") return "";
-    const url = playlistUrl;
-    let base = "";
-    if (url.includes("cloudflarestream.com") && url.includes("/iframe")) {
-      base = url;
-    } else if (url.includes("cloudflarestream.com")) {
-      const id = url.split("/").filter(Boolean).pop();
-      base = `https://iframe.videodelivery.net/${id}`;
-    } else {
-      base = `https://iframe.videodelivery.net/${url}`;
-    }
-    const sep = base.includes("?") ? "&" : "?";
-    return `${base}${sep}autoplay=true&preload=auto`;
-  }, [playlistType, playlistUrl]);
+  // (YouTube and Cloudflare URLs are now built imperatively in effects above)
 
   return (
     <div
