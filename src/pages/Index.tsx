@@ -276,7 +276,7 @@ const Index = () => {
 
     if (orderData?.id) {
       supabase.functions.invoke("notify-subscription-order", {
-        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "payment-proofs", order_type: "subscription" },
+        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "payment-proofs", order_type: "subscription", schedule_date: selectedShow.schedule_date || null, schedule_time: selectedShow.schedule_time || null },
       }).catch(() => {});
     }
     // Auto-open WhatsApp with order details
