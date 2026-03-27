@@ -97,7 +97,7 @@ const Index = () => {
         const { data } = await supabase.rpc("get_public_shows");
         return data || [];
       }, 30_000),
-      supabase.rpc("get_stream_status"),
+      (supabase.rpc as any)("get_stream_status"),
     ]);
     setShows(showsData as Show[]);
     if (streamRes.data) setIsStreamLive((streamRes.data as any)?.is_live || false);
