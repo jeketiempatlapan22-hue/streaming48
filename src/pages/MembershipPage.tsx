@@ -389,6 +389,14 @@ const MembershipPage = () => {
                     📱 Gabung Grup
                   </a>
                 )}
+                {whatsappNumber && selectedShow && purchaseMethod !== "coin" && (
+                  <Button
+                    onClick={() => openWhatsAppOrderDetail(selectedShow, phone, email)}
+                    className="w-full gap-2 bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90 text-primary-foreground"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Kirim Ulang ke WhatsApp Admin
+                  </Button>
+                )}
               </div>
             )}
 
