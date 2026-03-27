@@ -496,11 +496,21 @@ const SubscriptionOrderManager = ({ mode = "membership" }: SubscriptionOrderMana
                         </Button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setEditEmails((prev) => ({ ...prev, [order.id]: order.email || "" }))}
-                        className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">
-                        {order.email || <span className="italic text-muted-foreground/60">Belum ada email — klik untuk isi</span>}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setEditEmails((prev) => ({ ...prev, [order.id]: order.email || "" }))}
+                          className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">
+                          {order.email || <span className="italic text-muted-foreground/60">Belum ada email — klik untuk isi</span>}
+                        </button>
+                        {order.email && (
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(order.email); setCopiedField("email-" + order.id); setTimeout(() => setCopiedField(""), 1500); }}
+                            className="ml-1 text-xs text-primary hover:underline"
+                          >
+                            {copiedField === "email-" + order.id ? "✓" : <Copy className="h-3 w-3 inline" />}
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
