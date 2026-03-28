@@ -156,6 +156,12 @@ async function generateYouTubeSignedUrl(playlistId: string, functionUrl: string)
   return `${functionUrl}/stream-proxy?mode=yt&pid=${playlistId}&exp=${exp}&sig=${sig}`;
 }
 
+async function generateCloudflareSignedUrl(playlistId: string, functionUrl: string): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + YT_TOKEN_TTL;
+  const sig = await hmacSign(`cf:${playlistId}:${exp}`);
+  return `${functionUrl}/stream-proxy?mode=cf&pid=${playlistId}&exp=${exp}&sig=${sig}`;
+}
+
 async function rewriteM3u8Hybrid(content: string, baseUrl: string, functionUrl: string): Promise<string> {
   const lines = content.split("\n");
   const result: string[] = [];
