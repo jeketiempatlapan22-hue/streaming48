@@ -653,6 +653,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         </>
       )}
 
+      {playlistType === "m3u8" && (
         <video
           ref={videoRef}
           onClick={togglePlay}
