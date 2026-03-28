@@ -213,22 +213,37 @@ async function fetchAndRewriteM3u8(originUrl: string, cacheKey: string, function
   return rewritten;
 }
 
-// Extract YouTube video ID from various URL formats
+// XOR key (must match client-side key)
+const XOR_KEY = [82,84,52,56,120,75,57,109,81,50,118,76,55,110,80,52];
+
+// Decrypt XOR-encrypted embed ID (handles "enc:" prefix stored in DB)
+function xorDecryptId(encoded: string): string {
+  if (!encoded.startsWith("enc:")) return encoded;
+  const b64 = encoded.slice(4);
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const result = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    result[i] = bytes[i] ^ XOR_KEY[i % XOR_KEY.length];
+  }
+  return new TextDecoder().decode(result);
+}
+
+// Extract YouTube video ID from various URL formats (decrypts enc: prefix first)
 function extractYouTubeId(url: string): string {
   if (!url) return url;
-  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
-  const match = url.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/watch\?.*v=)([a-zA-Z0-9_-]{11})/);
-  return match?.[1] || url;
+  const decrypted = xorDecryptId(url);
+  if (/^[a-zA-Z0-9_-]{11}$/.test(decrypted)) return decrypted;
+  const match = decrypted.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/watch\?.*v=)([a-zA-Z0-9_-]{11})/);
+  return match?.[1] || decrypted;
 }
 
 // XOR encrypt YouTube video ID to prevent exposure in network responses
 function xorEncryptId(videoId: string): string {
-  const key = [82,84,52,56,120,75,57,109,81,50,118,76,55,110,80,52];
   const encoder = new TextEncoder();
   const bytes = encoder.encode(videoId);
   const result = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = bytes[i] ^ key[i % key.length];
+    result[i] = bytes[i] ^ XOR_KEY[i % XOR_KEY.length];
   }
   return "enc:" + btoa(String.fromCharCode(...result));
 }
