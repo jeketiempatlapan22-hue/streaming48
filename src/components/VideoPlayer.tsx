@@ -468,15 +468,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
   const togglePlay = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (playlistType === "youtube_proxy") {
-      if (!isPlaying) {
-        setIframeRefreshKey(k => k + 1);
-        setIsPlaying(true);
-      } else {
-        setIsPlaying(false);
-      }
-      return;
-    }
     if (playlistType === "youtube") {
       if (ytFallback) {
         // Reload iframe to get latest content
