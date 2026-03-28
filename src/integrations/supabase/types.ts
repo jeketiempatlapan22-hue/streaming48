@@ -971,6 +971,24 @@ export type Database = {
         }
         Relationships: []
       }
+      viewer_counts: {
+        Row: {
+          id: string
+          last_seen_at: string
+          viewer_key: string
+        }
+        Insert: {
+          id?: string
+          last_seen_at?: string
+          viewer_key: string
+        }
+        Update: {
+          id?: string
+          last_seen_at?: string
+          viewer_key?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -987,6 +1005,7 @@ export type Database = {
       claim_referral: { Args: { _code: string }; Returns: Json }
       cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
+      cleanup_stale_viewers: { Args: never; Returns: undefined }
       confirm_coin_order: { Args: { _order_id: string }; Returns: Json }
       confirm_regular_order: { Args: { _order_id: string }; Returns: Json }
       create_token_session: {
@@ -1065,6 +1084,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_viewer_count: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1099,6 +1119,8 @@ export type Database = {
         Returns: Json
       }
       validate_token: { Args: { _code: string }; Returns: Json }
+      viewer_heartbeat: { Args: { _key: string }; Returns: undefined }
+      viewer_leave: { Args: { _key: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
