@@ -63,6 +63,7 @@ const Index = () => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
+  const [orderShortId, setOrderShortId] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
