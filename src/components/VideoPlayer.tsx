@@ -340,9 +340,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
           videoId,
           playerVars: {
             autoplay: autoPlay ? 1 : 0,
-            mute: 1, // Must start muted for autoplay to work (browser policy)
+            mute: 1,
             enablejsapi: 1,
-            controls: 1, // Show native controls as fallback
+            controls: 0, // Hide native controls, use custom controls
             disablekb: 1,
             fs: 0,
             modestbranding: 1,
@@ -474,7 +474,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
     const container = ytFallbackContainerRef.current;
     if (!container) return;
     const videoId = extractVideoId(playlistUrl);
-    const ytUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=0&controls=1&fs=1`;
+    const ytUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=0&controls=0&fs=0&iv_load_policy=3`;
     createProtectedIframe(container, ytUrl, {
       allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share",
       allowFullscreen: true,
@@ -650,15 +650,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       )}
 
       {playlistType === "youtube" && !ytFallback && (
-        <div className={`${isFullscreen ? "relative max-h-screen aspect-video" : "absolute inset-0"}`}>
+        <div className={`relative w-full h-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}>
           <div
             ref={ytContainerRef}
-            className="w-full h-full [&>div]:!w-full [&>div]:!h-full [&>iframe]:!w-full [&>iframe]:!h-full [&>div>iframe]:!w-full [&>div>iframe]:!h-full [&_iframe]:!w-full [&_iframe]:!h-full [&_iframe]:!absolute [&_iframe]:!inset-0"
-            onContextMenu={(e) => e.preventDefault()}
+            className="absolute inset-0 w-full h-full [&>div]:!w-full [&>div]:!h-full [&>iframe]:!w-full [&>iframe]:!h-full [&>div>iframe]:!w-full [&>div>iframe]:!h-full [&_iframe]:!w-full [&_iframe]:!h-full [&_iframe]:!absolute [&_iframe]:!inset-0"
           />
-          {/* Protective overlay - blocks inspect/right-click on iframe */}
+          {/* Protective overlay - blocks right-click & inspect on iframe, click triggers play/pause */}
           <div
-            className="absolute inset-0 z-10"
+            className="absolute inset-0 z-10 cursor-pointer"
             style={{ background: "transparent" }}
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
@@ -669,15 +668,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
       {/* YouTube fallback: protected iframe container */}
       {playlistType === "youtube" && ytFallback && (
-        <div className={`${isFullscreen ? "relative max-h-screen aspect-video" : "absolute inset-0"}`}>
+        <div className={`relative w-full h-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}>
           <div
             ref={ytFallbackContainerRef}
-            className="h-full w-full"
-            onContextMenu={(e) => e.preventDefault()}
+            className="absolute inset-0 w-full h-full"
           />
           {/* Protective overlay */}
           <div
-            className="absolute inset-0 z-10"
+            className="absolute inset-0 z-10 cursor-pointer"
             style={{ background: "transparent" }}
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
