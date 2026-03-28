@@ -91,11 +91,20 @@ serve(async (req) => {
           .download(proof_file_path);
 
         if (!downloadError && fileData) {
-          const formData = new FormData();
+          const photoPayload: any = {
+            chat_id: ADMIN_CHAT_ID,
+            caption: caption,
+            parse_mode: 'MarkdownV2',
+          };
+          if (inline_keyboard.length > 0) {
+            photoPayload.reply_markup = JSON.stringify({ inline_keyboard });
+          }
           formData.append('chat_id', ADMIN_CHAT_ID);
           formData.append('caption', caption);
           formData.append('parse_mode', 'MarkdownV2');
-          formData.append('reply_markup', JSON.stringify({ inline_keyboard }));
+          if (inline_keyboard.length > 0) {
+            formData.append('reply_markup', JSON.stringify({ inline_keyboard }));
+          }
           formData.append('photo', fileData, 'payment-proof.jpg');
 
           const photoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
