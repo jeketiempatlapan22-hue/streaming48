@@ -51,13 +51,16 @@ const ReplayPage = () => {
   const [replayResult, setReplayResult] = useState<{ replay_password: string; remaining_balance: number } | null>(null);
 
   // QRIS flow state
-  const [qrisStep, setQrisStep] = useState<"scan" | "upload" | "done">("scan");
+  const [qrisStep, setQrisStep] = useState<"scan" | "upload" | "info" | "done">("scan");
   const [uploadingProof, setUploadingProof] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [loginPopup, setLoginPopup] = useState(false);
+  const [qrisPhone, setQrisPhone] = useState("");
+  const [qrisEmail, setQrisEmail] = useState("");
+  const [orderShortId, setOrderShortId] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
