@@ -115,10 +115,14 @@ serve(async (req) => {
 
     // Fallback: send text only to Telegram
     if (!photoSent) {
+      const msgPayload: any = { chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2' };
+      if (inline_keyboard.length > 0) {
+        msgPayload.reply_markup = { inline_keyboard };
+      }
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: caption, parse_mode: 'MarkdownV2', reply_markup: { inline_keyboard } }),
+        body: JSON.stringify(msgPayload),
       });
     }
 
