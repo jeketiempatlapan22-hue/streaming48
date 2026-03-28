@@ -24,6 +24,7 @@ interface ChatMessage {
   message: string;
   is_pinned: boolean;
   is_admin: boolean;
+  is_deleted: boolean;
   token_id: string | null;
   created_at: string;
 }
