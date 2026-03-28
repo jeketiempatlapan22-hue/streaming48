@@ -1008,6 +1008,16 @@ export type Database = {
       cleanup_stale_viewers: { Args: never; Returns: undefined }
       confirm_coin_order: { Args: { _order_id: string }; Returns: Json }
       confirm_regular_order: { Args: { _order_id: string }; Returns: Json }
+      create_show_order: {
+        Args: {
+          _email?: string
+          _payment_method?: string
+          _payment_proof_url?: string
+          _phone: string
+          _show_id: string
+        }
+        Returns: Json
+      }
       create_token_session: {
         Args: { _fingerprint: string; _token_code: string; _user_agent: string }
         Returns: Json
