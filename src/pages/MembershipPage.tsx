@@ -159,20 +159,30 @@ const MembershipPage = () => {
     setSubmitting(true);
     const { data: urlData } = await supabase.storage.from("coin-proofs").createSignedUrl(proofFilePath, 86400);
     const signedUrl = urlData?.signedUrl || "";
-    const { data: orderData } = await (supabase as any).from("subscription_orders").insert({
-      show_id: selectedShow.id,
-      phone, email,
-      payment_proof_url: signedUrl,
-      payment_method: "qris",
-    }).select("id").single();
+    let orderId: string | null = null;
+    let shortId: string | null = null;
+    try {
+      const { data, error } = await supabase.rpc("create_show_order", {
+        _show_id: selectedShow.id, _phone: phone, _email: email || null, _payment_proof_url: signedUrl || null,
+      });
+      const result = data as any;
+      if (error || !result?.success) {
+        toast({ title: "Gagal menyimpan pesanan: " + (error?.message || "Coba lagi"), variant: "destructive" });
+      } else {
+        orderId = result.order_id;
+        shortId = result.short_id;
+        setOrderShortId(shortId || "");
+      }
+    } catch (e: any) {
+      toast({ title: "Gagal menyimpan pesanan", variant: "destructive" });
+    }
     setResultGroupLink(selectedShow.group_link || "");
     setPurchaseStep("done");
     setSubmitting(false);
     fetchMyOrders();
-
-    if (orderData?.id) {
+    if (orderId) {
       supabase.functions.invoke("notify-subscription-order", {
-        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "coin-proofs", order_type: "membership" },
+        body: { order_id: orderId, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "coin-proofs", order_type: "membership" },
       }).catch(() => {});
     }
     openWhatsAppOrderDetail(selectedShow, phone, email);
