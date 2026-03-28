@@ -679,13 +679,11 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
       )}
 
       {playlistType === "cloudflare" && (
-        <>
-          <div
-            ref={cfContainerRef}
-            className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
-          />
-          <div className="absolute inset-0 z-10 cursor-pointer" onClick={togglePlay} style={{ pointerEvents: "auto" }} />
-        </>
+        <div
+          ref={cfContainerRef}
+          className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
+          onContextMenu={(e) => e.preventDefault()}
+        />
       )}
 
       {/* Token code watermark */}
