@@ -642,7 +642,17 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         </>
       )}
 
-      {playlistType === "m3u8" && (
+      {/* YouTube proxy: iframe loaded from signed proxy URL */}
+      {playlistType === "youtube_proxy" && (
+        <>
+          <div
+            ref={ytProxyContainerRef}
+            className={`h-full w-full ${isFullscreen ? "max-h-screen aspect-video" : "absolute inset-0"}`}
+          />
+          <div className="absolute inset-0 z-10 cursor-pointer" onClick={togglePlay} style={{ pointerEvents: "auto" }} />
+        </>
+      )}
+
         <video
           ref={videoRef}
           onClick={togglePlay}
