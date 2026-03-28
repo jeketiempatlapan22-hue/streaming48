@@ -63,6 +63,7 @@ const Index = () => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [proofFilePath, setProofFilePath] = useState("");
+  const [orderShortId, setOrderShortId] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
@@ -224,38 +225,24 @@ const Index = () => {
       signedUrl = urlData?.signedUrl || "";
     }
     let orderId: string | null = null;
-    let insertSuccess = false;
+    let shortId: string | null = null;
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess?.session?.user?.id || null;
-      if (uid) {
-        const { data: orderData, error: insertErr } = await supabase.from("subscription_orders").insert({
-          show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null, user_id: uid,
-        }).select("id").single();
-        if (insertErr) {
-          console.error("Order insert error:", insertErr.message);
-          toast.error("Gagal menyimpan pesanan: " + insertErr.message);
-        } else {
-          orderId = orderData?.id || null;
-          insertSuccess = true;
-        }
+      const { data, error } = await supabase.rpc("create_show_order", {
+        _show_id: selectedShow.id, _phone: phone, _email: email || null, _payment_proof_url: signedUrl || null,
+      });
+      const result = data as any;
+      if (error || !result?.success) {
+        console.error("Order insert error:", error?.message || result);
+        toast.error("Gagal menyimpan pesanan: " + (error?.message || "Coba lagi"));
       } else {
-        const { error: insertErr } = await supabase.from("subscription_orders").insert({
-          show_id: selectedShow.id, phone, email: email || null, payment_proof_url: signedUrl || null, user_id: null,
-        });
-        if (insertErr) {
-          console.error("Order insert error:", insertErr.message);
-          toast.error("Gagal menyimpan pesanan: " + insertErr.message);
-        } else {
-          insertSuccess = true;
-        }
+        orderId = result.order_id;
+        shortId = result.short_id;
+        setOrderShortId(shortId || "");
+        toast.success("✅ Pesanan berhasil dikirim! Admin akan segera memproses.");
       }
     } catch (e: any) {
       console.error("Order insert exception:", e);
       toast.error("Gagal menyimpan pesanan: " + (e?.message || "Coba lagi"));
-    }
-    if (insertSuccess) {
-      toast.success("✅ Pesanan berhasil dikirim! Admin akan segera memproses.");
     }
     setPurchaseStep("done");
     supabase.functions.invoke("notify-subscription-order", {
@@ -290,38 +277,24 @@ const Index = () => {
     const { data: urlData } = await supabase.storage.from("payment-proofs").createSignedUrl(proofFilePath, 86400);
     const signedUrl = urlData?.signedUrl || "";
     let orderId: string | null = null;
-    let insertSuccess = false;
+    let shortId: string | null = null;
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess?.session?.user?.id || null;
-      if (uid) {
-        const { data: orderData, error: insertErr } = await supabase.from("subscription_orders").insert({
-          show_id: selectedShow.id, phone, email, payment_proof_url: signedUrl, user_id: uid,
-        }).select("id").single();
-        if (insertErr) {
-          console.error("Order insert error:", insertErr.message);
-          toast.error("Gagal menyimpan pesanan: " + insertErr.message);
-        } else {
-          orderId = orderData?.id || null;
-          insertSuccess = true;
-        }
+      const { data, error } = await supabase.rpc("create_show_order", {
+        _show_id: selectedShow.id, _phone: phone, _email: email || null, _payment_proof_url: signedUrl || null,
+      });
+      const result = data as any;
+      if (error || !result?.success) {
+        console.error("Order insert error:", error?.message || result);
+        toast.error("Gagal menyimpan pesanan: " + (error?.message || "Coba lagi"));
       } else {
-        const { error: insertErr } = await supabase.from("subscription_orders").insert({
-          show_id: selectedShow.id, phone, email, payment_proof_url: signedUrl, user_id: null,
-        });
-        if (insertErr) {
-          console.error("Order insert error:", insertErr.message);
-          toast.error("Gagal menyimpan pesanan: " + insertErr.message);
-        } else {
-          insertSuccess = true;
-        }
+        orderId = result.order_id;
+        shortId = result.short_id;
+        setOrderShortId(shortId || "");
+        toast.success("✅ Pesanan berhasil dikirim! Admin akan segera memproses.");
       }
     } catch (e: any) {
       console.error("Order insert exception:", e);
       toast.error("Gagal menyimpan pesanan: " + (e?.message || "Coba lagi"));
-    }
-    if (insertSuccess) {
-      toast.success("✅ Pesanan berhasil dikirim! Admin akan segera memproses.");
     }
     setPurchaseStep("done");
     supabase.functions.invoke("notify-subscription-order", {
@@ -928,6 +901,12 @@ const Index = () => {
               <div className="space-y-4 text-center">
                 <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
                 <h4 className="text-lg font-bold text-foreground">Pesanan Terkirim!</h4>
+                {orderShortId && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">🆔 ID Pesanan</p>
+                    <p className="font-mono text-lg font-bold text-primary">{orderShortId}</p>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">Data pesanan Anda telah dikirim. Admin akan mengirimkan <strong>link live streaming</strong> ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
                 {settings.whatsapp_number && (
                   <Button
@@ -996,6 +975,12 @@ const Index = () => {
               <div className="space-y-4 text-center">
                 <CheckCircle className="mx-auto h-12 w-12 text-[hsl(var(--success))]" />
                 <h4 className="text-lg font-bold text-foreground">Pendaftaran Berhasil!</h4>
+                {orderShortId && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">🆔 ID Pesanan</p>
+                    <p className="font-mono text-lg font-bold text-primary">{orderShortId}</p>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">Admin akan mengirimkan informasi akses ke nomor <strong>{phone}</strong> setelah pembayaran dikonfirmasi.</p>
                 {settings.whatsapp_number && (
                   <Button

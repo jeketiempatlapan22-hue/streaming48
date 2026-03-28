@@ -40,6 +40,7 @@ const MembershipPage = () => {
   const [coinBalance, setCoinBalance] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [resultGroupLink, setResultGroupLink] = useState("");
+  const [orderShortId, setOrderShortId] = useState("");
   const [coinOnly, setCoinOnly] = useState(false);
   const [closedPopup, setClosedPopup] = useState<Show | null>(null);
   const [myOrderedShows, setMyOrderedShows] = useState<Set<string>>(new Set());
@@ -158,20 +159,30 @@ const MembershipPage = () => {
     setSubmitting(true);
     const { data: urlData } = await supabase.storage.from("coin-proofs").createSignedUrl(proofFilePath, 86400);
     const signedUrl = urlData?.signedUrl || "";
-    const { data: orderData } = await (supabase as any).from("subscription_orders").insert({
-      show_id: selectedShow.id,
-      phone, email,
-      payment_proof_url: signedUrl,
-      payment_method: "qris",
-    }).select("id").single();
+    let orderId: string | null = null;
+    let shortId: string | null = null;
+    try {
+      const { data, error } = await supabase.rpc("create_show_order", {
+        _show_id: selectedShow.id, _phone: phone, _email: email || null, _payment_proof_url: signedUrl || null,
+      });
+      const result = data as any;
+      if (error || !result?.success) {
+        toast({ title: "Gagal menyimpan pesanan: " + (error?.message || "Coba lagi"), variant: "destructive" });
+      } else {
+        orderId = result.order_id;
+        shortId = result.short_id;
+        setOrderShortId(shortId || "");
+      }
+    } catch (e: any) {
+      toast({ title: "Gagal menyimpan pesanan", variant: "destructive" });
+    }
     setResultGroupLink(selectedShow.group_link || "");
     setPurchaseStep("done");
     setSubmitting(false);
     fetchMyOrders();
-
-    if (orderData?.id) {
+    if (orderId) {
       supabase.functions.invoke("notify-subscription-order", {
-        body: { order_id: orderData.id, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "coin-proofs", order_type: "membership" },
+        body: { order_id: orderId, show_title: selectedShow.title, phone, email, proof_file_path: proofFilePath, proof_bucket: "coin-proofs", order_type: "membership" },
       }).catch(() => {});
     }
     openWhatsAppOrderDetail(selectedShow, phone, email);
@@ -384,6 +395,12 @@ const MembershipPage = () => {
               <div className="space-y-4 text-center">
                 <div className="text-4xl">🎉</div>
                 <h4 className="text-lg font-bold text-foreground">Pendaftaran Berhasil!</h4>
+                {orderShortId && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">🆔 ID Pesanan</p>
+                    <p className="font-mono text-lg font-bold text-primary">{orderShortId}</p>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">{purchaseMethod === "coin" ? "Koin berhasil ditukar. Admin akan menghubungi Anda." : "Admin akan memverifikasi pembayaran Anda"}</p>
                 {resultGroupLink && (
                   <a href={resultGroupLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--success))] px-6 py-3 font-semibold text-primary-foreground hover:opacity-90">
