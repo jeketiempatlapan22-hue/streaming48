@@ -6,6 +6,7 @@ import logo from "@/assets/logo.png";
 import ConnectionStatus from "@/components/viewer/ConnectionStatus";
 import PipButton from "@/components/viewer/PipButton";
 import SecurityAlert from "@/components/viewer/SecurityAlert";
+import LiveViewerCount from "@/components/viewer/LiveViewerCount";
 import PlayerAnimations, { AnimationType } from "@/components/viewer/PlayerAnimations";
 import ViewerBroadcast from "@/components/viewer/ViewerBroadcast";
 import { Menu, X, MessageCircle, Home, Phone } from "lucide-react";
