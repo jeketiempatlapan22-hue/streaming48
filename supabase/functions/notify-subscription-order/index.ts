@@ -68,15 +68,17 @@ serve(async (req) => {
     const actionLabel = is_confirmation ? 'Dikonfirmasi' : 'Baru';
 
     const scheduleInfo = schedule_date ? `\n📅 Jadwal: ${escapeMarkdown(schedule_date)}${schedule_time ? ' ' + escapeMarkdown(schedule_time) : ''}` : '';
-    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} Baru\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}${scheduleInfo}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
+    const caption = `${emoji} *Order ${escapeMarkdown(typeLabel)} ${escapeMarkdown(actionLabel)}\\!*\n\n🎭 Show: ${escapeMarkdown(show_title)}${scheduleInfo}\n📱 Phone: ${escapeMarkdown(phone || '-')}\n📧 Email: ${escapeMarkdown(email || '-')}\n🆔 ID: \`${escapeMarkdown(shortId)}\``;
 
-    const inline_keyboard = [[
+    const inline_keyboard = is_confirmation ? [] : [[
       { text: '✅ Konfirmasi', callback_data: `approve_sub_${shortId}` },
       { text: '❌ Tolak', callback_data: `reject_sub_${shortId}` },
     ]];
 
     const waScheduleInfo = schedule_date ? `\n📅 Jadwal: ${schedule_date}${schedule_time ? ' ' + schedule_time : ''}` : '';
-    const waText = `${emoji} *Order ${typeLabel} Baru!*\n\n🎭 Show: ${show_title}${waScheduleInfo}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
+    const waText = is_confirmation
+      ? `${emoji} *Order ${typeLabel} ${actionLabel}!*\n\n🎭 Show: ${show_title}${waScheduleInfo}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}`
+      : `${emoji} *Order ${typeLabel} ${actionLabel}!*\n\n🎭 Show: ${show_title}${waScheduleInfo}\n📱 Phone: ${phone || '-'}\n📧 Email: ${email || '-'}\n🆔 ID: ${shortId}\n\n✅ Balas *YA ${shortId}* untuk konfirmasi\n❌ Balas *TIDAK ${shortId}* untuk tolak`;
 
     const bucket = proof_bucket || 'payment-proofs';
     let photoSent = false;
