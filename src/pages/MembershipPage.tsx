@@ -40,6 +40,7 @@ const MembershipPage = () => {
   const [coinBalance, setCoinBalance] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [resultGroupLink, setResultGroupLink] = useState("");
+  const [orderShortId, setOrderShortId] = useState("");
   const [coinOnly, setCoinOnly] = useState(false);
   const [closedPopup, setClosedPopup] = useState<Show | null>(null);
   const [myOrderedShows, setMyOrderedShows] = useState<Set<string>>(new Set());
