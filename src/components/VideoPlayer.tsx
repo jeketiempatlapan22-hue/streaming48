@@ -572,10 +572,30 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
 
   // (YouTube and Cloudflare URLs are now built imperatively in effects above)
 
+  // Block DevTools shortcuts on the player area
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) ||
+        (e.ctrlKey && e.key === "u") ||
+        (e.ctrlKey && e.key === "s")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, []);
+
   return (
     <div
       ref={containerRef}
       className={`relative w-full bg-card overflow-hidden ${isFullscreen ? "flex items-center justify-center !h-screen" : "aspect-video"}`}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      style={{ userSelect: "none", WebkitUserSelect: "none" }}
     >
       {/* Loading overlay */}
       {isLoading && (
