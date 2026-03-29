@@ -321,6 +321,11 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
         stallCheckInterval = setInterval(() => {
           if (destroyed || !videoRef.current || !hls) return;
           const vid = videoRef.current;
+          // Track if behind live edge
+          if (hls.liveSyncPosition && !vid.paused) {
+            const lag = hls.liveSyncPosition - vid.currentTime;
+            setIsBehindLive(lag > 5);
+          }
           if (vid.paused) { lastPlayPos = vid.currentTime; stallCount = 0; return; }
           if (Math.abs(vid.currentTime - lastPlayPos) < 0.1 && vid.readyState < 4) {
             stallCount++;
@@ -331,7 +336,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
             }
           } else { stallCount = 0; }
           lastPlayPos = vid.currentTime;
-          if (hls.liveSyncPosition && (hls.liveSyncPosition - vid.currentTime > 12)) {
+          if (hls.liveSyncPosition && (hls.liveSyncPosition - vid.currentTime > 15)) {
             vid.currentTime = hls.liveSyncPosition;
           }
         }, 3000);
