@@ -32,6 +32,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ playlist,
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [ytFallback, setYtFallback] = useState(false);
   const [iframeRefreshKey, setIframeRefreshKey] = useState(0);
+  const [isBehindLive, setIsBehindLive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const ytPlayerRef = useRef<any>(null);
